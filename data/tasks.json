@@ -290,7 +290,7 @@
       "subtasks": [],
       "priority": "medium",
       "createdAt": "2026-03-24T22:41:04.316Z",
-      "status": "review",
+      "status": "done",
       "comments": [
         {
           "id": "c1",
@@ -298,7 +298,8 @@
           "text": "Criei o script ola_mundo.py no diretório raiz do workspace. Ele imprime 'Olá mundo' quando executado. Suportado nativamente no Python3.",
           "createdAt": "2026-03-24T19:42:36.230534Z"
         }
-      ]
+      ],
+      "completedAt": "2026-03-24T22:44:34.043Z"
     }
   ],
   "projects": [
@@ -329,5 +330,5 @@
       "time": "just now"
     }
   ],
-  "lastUpdated": "2026-03-24T22:41:04.316Z"
+  "lastUpdated": "2026-03-24T22:44:34.043Z"
 }
