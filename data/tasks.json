@@ -290,7 +290,15 @@
       "subtasks": [],
       "priority": "medium",
       "createdAt": "2026-03-24T22:41:04.316Z",
-      "status": "in_progress"
+      "status": "review",
+      "comments": [
+        {
+          "id": "c1",
+          "author": "MoltBot",
+          "text": "Criei o script ola_mundo.py no diretório raiz do workspace. Ele imprime 'Olá mundo' quando executado. Suportado nativamente no Python3.",
+          "createdAt": "2026-03-24T19:42:36.230534Z"
+        }
+      ]
     }
   ],
   "projects": [
