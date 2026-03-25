@@ -300,6 +300,114 @@
         }
       ],
       "completedAt": "2026-03-24T22:44:34.043Z"
+    },
+    {
+      "id": "squad_setup",
+      "title": "🏗️ Squad Microsoft: Configuração de Arquitetura e Stack",
+      "description": "Definir a estrutura básica do projeto, padrões de design (SOLID, Clean Architecture) e stack tecnológica oficial.\n\n**Especialista:** Arquiteto de Sistemas (Lead)",
+      "status": "backlog",
+      "project": "microsoft_squad",
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": "sub_1",
+          "title": "Definir Estrutura de Pastas",
+          "done": false
+        },
+        {
+          "id": "sub_2",
+          "title": "Escolher Tecnologias (Backend/Frontend/DB)",
+          "done": false
+        },
+        {
+          "id": "sub_3",
+          "title": "Documentar Padrões de Código",
+          "done": false
+        }
+      ],
+      "comments": [],
+      "createdAt": "2026-03-25T19:28:15.583Z"
+    },
+    {
+      "id": "squad_backend",
+      "title": "⚙️ Squad Microsoft: Desenvolvimento do Core Backend",
+      "description": "Implementar a lógica de negócios, autenticação e banco de dados com tipagem estrita e segurança robusta.\n\n**Especialista:** Engenheiro de Backend (Sênior)",
+      "status": "backlog",
+      "project": "microsoft_squad",
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": "sub_1",
+          "title": "Implementar Auth/JWT",
+          "done": false
+        },
+        {
+          "id": "sub_2",
+          "title": "Modelagem de Dados",
+          "done": false
+        },
+        {
+          "id": "sub_3",
+          "title": "CRUDs Iniciais",
+          "done": false
+        }
+      ],
+      "comments": [],
+      "createdAt": "2026-03-25T19:28:15.583Z"
+    },
+    {
+      "id": "squad_frontend",
+      "title": "🎨 Squad Microsoft: Interface Moderna (DX/UX)",
+      "description": "Desenvolver a interface do usuário focada em performance, acessibilidade e design limpo.\n\n**Especialista:** Engenheiro de Frontend",
+      "status": "backlog",
+      "project": "microsoft_squad",
+      "priority": "medium",
+      "subtasks": [
+        {
+          "id": "sub_1",
+          "title": "Configurar Layout Base",
+          "done": false
+        },
+        {
+          "id": "sub_2",
+          "title": "Componentização (Atomic Design)",
+          "done": false
+        },
+        {
+          "id": "sub_3",
+          "title": "Integração com API",
+          "done": false
+        }
+      ],
+      "comments": [],
+      "createdAt": "2026-03-25T19:28:15.583Z"
+    },
+    {
+      "id": "squad_qa",
+      "title": "🛡️ Squad Microsoft: QA & Segurança (CI/CD)",
+      "description": "Garantir a qualidade do software através de testes automatizados e auditoria de vulnerabilidades.\n\n**Especialista:** QA & Security Specialist",
+      "status": "backlog",
+      "project": "microsoft_squad",
+      "priority": "medium",
+      "subtasks": [
+        {
+          "id": "sub_1",
+          "title": "Configurar Jest/Cypress",
+          "done": false
+        },
+        {
+          "id": "sub_2",
+          "title": "Auditoria de Dependências",
+          "done": false
+        },
+        {
+          "id": "sub_3",
+          "title": "Testes de Integração",
+          "done": false
+        }
+      ],
+      "comments": [],
+      "createdAt": "2026-03-25T19:28:15.583Z"
     }
   ],
   "projects": [
@@ -314,6 +422,12 @@
       "name": "My Project",
       "color": "#3b82f6",
       "icon": "📁"
+    },
+    {
+      "id": "microsoft_squad",
+      "name": "Microsoft Squad Project",
+      "color": "#0078d4",
+      "icon": "🏢"
     }
   ],
   "activities": [
