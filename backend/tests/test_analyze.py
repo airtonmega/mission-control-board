@@ -1,4 +1,13 @@
+import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
+
+from app.services.openai_service import (
+    AIResponseError,
+    AIServiceUnavailableError,
+    reset_openai_service,
+)
 
 
 @pytest.mark.anyio
@@ -95,3 +104,69 @@ async def test_session_report(client):
     data = response.json()
     assert data["session_id"] == "test-session-001"
     assert isinstance(data["topics_covered"], list)
+
+
+# ── Structured error response tests ──────────────────────────────────────────
+# These tests verify that errors from OpenAIService are returned as structured
+# JSON (AnalyzeErrorDetail), not bare strings, so Android can parse them.
+
+
+def _mock_svc_raising(exc: Exception) -> MagicMock:
+    svc = MagicMock()
+    svc.analyze_text = AsyncMock(side_effect=exc)
+    return svc
+
+
+@pytest.mark.anyio
+async def test_analyze_text_ai_response_error_returns_422_structured(client):
+    """When OpenAIService raises AIResponseError, endpoint returns 422 with structured detail."""
+    err = AIResponseError(user_message="A IA retornou resposta inválida.", technical_detail="missing quick_tip")
+
+    with patch("app.routers.analyze._should_use_mock", return_value=False), \
+         patch("app.routers.analyze.get_openai_service", return_value=_mock_svc_raising(err)):
+        response = await client.post(
+            "/analyze/text",
+            json={"session_id": "err-001", "question": "Pergunta de teste?"},
+        )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert detail["error_code"] == "AI_RESPONSE_INVALID"
+    assert detail["session_id"] == "err-001"
+    assert isinstance(detail["error_message"], str) and len(detail["error_message"]) > 0
+    assert detail["repair_attempted"] is True
+
+
+@pytest.mark.anyio
+async def test_analyze_text_service_unavailable_returns_503_structured(client):
+    """When OpenAIService raises AIServiceUnavailableError, endpoint returns 503."""
+    err = AIServiceUnavailableError(user_message="Serviço temporariamente indisponível.", technical_detail="conn")
+
+    with patch("app.routers.analyze._should_use_mock", return_value=False), \
+         patch("app.routers.analyze.get_openai_service", return_value=_mock_svc_raising(err)):
+        response = await client.post(
+            "/analyze/text",
+            json={"session_id": "err-002", "question": "Pergunta de teste?"},
+        )
+
+    assert response.status_code == 503
+    detail = response.json()["detail"]
+    assert detail["error_code"] == "AI_SERVICE_UNAVAILABLE"
+    assert detail["session_id"] == "err-002"
+
+
+@pytest.mark.anyio
+async def test_analyze_text_error_detail_has_required_fields(client):
+    """AnalyzeErrorDetail always contains all required keys for Android to parse."""
+    err = AIResponseError(user_message="Falha.", technical_detail="x")
+
+    with patch("app.routers.analyze._should_use_mock", return_value=False), \
+         patch("app.routers.analyze.get_openai_service", return_value=_mock_svc_raising(err)):
+        response = await client.post(
+            "/analyze/text",
+            json={"session_id": "err-003", "question": "Pergunta longa o suficiente"},
+        )
+
+    detail = response.json()["detail"]
+    for key in ("error_code", "error_message", "session_id", "repair_attempted"):
+        assert key in detail, f"Missing key in error detail: {key}"

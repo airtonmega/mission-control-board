@@ -90,6 +90,13 @@ python -m pytest tests/ -v
 
 Com `USE_MOCK_AI=true` (padrão), nenhuma chamada à OpenAI é feita. Ideal para desenvolvimento e demonstrações sem custo.
 
+Com `USE_MOCK_AI=false` e `OPENAI_API_KEY` preenchida, o backend usa o `OpenAIService` real:
+- Prompt carregado de `prompts/system_live_assistant.md`
+- Resposta validada com Pydantic (`OpenAIRawResponse`)
+- Se inválida: 1 tentativa de reparo automático
+- Se reparo falhar: erro estruturado retornado ao Android
+- Latência registrada por request nos logs
+
 ---
 
 ## Android App
@@ -160,12 +167,30 @@ cd android-app
 - Modo mock sem API key
 - 11 testes no backend (100% passando)
 
-### Fase 2 — Multimodal (próximos passos)
-- [ ] CameraX integrado com análise de imagem real
+### Fase 2 — OpenAI Real + Tratamento de Erros (concluída)
+- `OpenAIService` isolado em `app/services/openai_service.py`
+- System prompt dedicado em `prompts/system_live_assistant.md`
+- Validação Pydantic com `OpenAIRawResponse` (schema interno separado do contrato público)
+- Repair loop: 1 tentativa automática se resposta inválida, com prompt de correção dirigido
+- 3 tipos de erro mapeados: `AI_RESPONSE_INVALID` (422), `AI_SERVICE_UNAVAILABLE` (503), `INTERNAL_ERROR` (500)
+- Erros retornados como JSON estruturado `{"detail": {"error_code": ..., "error_message": ..., ...}}`
+- Android parseia `ApiErrorEnvelope` → exibe `error_message` em PT-BR ao usuário
+- Latência registrada em log estruturado a cada request
+- 26 testes no backend (100% passando)
+- Fallback mock automático se `USE_MOCK_AI=true` ou `OPENAI_API_KEY` ausente
+
+### Fase 3 — Multimodal (próximos passos)
+- [ ] CameraX integrado com análise de imagem real (`/analyze/image` real)
 - [ ] Speech-to-Text para entrada por voz
-- [ ] Indicadores de câmera/microfone ao vivo
+- [ ] Indicadores de câmera/microfone ao vivo (permissão real)
 - [ ] Fluxo completo de simulação de entrevista
 - [ ] Relatórios de sessão persistidos
+
+### Fase 4 — Polimento (roadmap)
+- [ ] Room para histórico offline
+- [ ] Export de relatório em PDF
+- [ ] Auth real com Google Sign-In
+- [ ] Testes instrumentados Android
 
 ### Fase 3 — Polimento (roadmap)
 - [ ] Room para histórico offline

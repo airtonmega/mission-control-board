@@ -27,3 +27,18 @@ data class ConsentAcceptResponse(
     @SerializedName("consent_recorded") val consentRecorded: Boolean,
     @SerializedName("message") val message: String,
 )
+
+// ── Error response (mirrors AnalyzeErrorDetail from backend) ─────────────────
+
+/** Inner payload of FastAPI's {"detail": {...}} error envelope. */
+data class ApiErrorResponse(
+    @SerializedName("error_code") val errorCode: String,
+    @SerializedName("error_message") val errorMessage: String,
+    @SerializedName("session_id") val sessionId: String,
+    @SerializedName("repair_attempted") val repairAttempted: Boolean = false,
+)
+
+/** Outer FastAPI error envelope: {"detail": <ApiErrorResponse>}. */
+data class ApiErrorEnvelope(
+    @SerializedName("detail") val detail: ApiErrorResponse?,
+)

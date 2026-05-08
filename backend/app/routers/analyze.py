@@ -1,30 +1,91 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
+
 from app.core.config import Settings, get_settings
 from app.models.schemas import (
-    AnalyzeTextRequest, AnalyzeTextResponse,
-    AnalyzeImageRequest, AnalyzeImageResponse,
+    AnalyzeErrorDetail,
+    AnalyzeImageRequest,
+    AnalyzeImageResponse,
+    AnalyzeTextRequest,
+    AnalyzeTextResponse,
 )
-from app.services import mock_service, ai_service
+from app.services import mock_service
+from app.services.openai_service import (
+    AIResponseError,
+    AIServiceUnavailableError,
+    OpenAIService,
+    get_openai_service,
+)
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analyze", tags=["analyze"])
+
+
+def _should_use_mock(settings: Settings) -> bool:
+    return settings.use_mock_ai or not settings.openai_api_key.strip()
 
 
 @router.post("/text", response_model=AnalyzeTextResponse)
 async def analyze_text(
     req: AnalyzeTextRequest,
     settings: Settings = Depends(get_settings),
-):
-    if settings.use_mock_ai or not settings.openai_api_key:
+) -> AnalyzeTextResponse:
+    if _should_use_mock(settings):
+        logger.debug("analyze_text using mock session_id=%s", req.session_id)
         return await mock_service.mock_analyze_text(req)
+
+    svc: OpenAIService = get_openai_service()
+
     try:
-        return await ai_service.real_analyze_text(req)
+        return await svc.analyze_text(req)
+
+    except AIResponseError as exc:
+        logger.warning(
+            "analyze_text AIResponseError session_id=%s detail=%s",
+            req.session_id,
+            exc.technical_detail,
+        )
+        raise HTTPException(
+            status_code=422,
+            detail=AnalyzeErrorDetail(
+                error_code="AI_RESPONSE_INVALID",
+                error_message=exc.user_message,
+                session_id=req.session_id,
+                repair_attempted=True,
+            ).model_dump(),
+        ) from exc
+
+    except AIServiceUnavailableError as exc:
+        logger.error(
+            "analyze_text AIServiceUnavailableError session_id=%s detail=%s",
+            req.session_id,
+            exc.technical_detail,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=AnalyzeErrorDetail(
+                error_code="AI_SERVICE_UNAVAILABLE",
+                error_message=exc.user_message,
+                session_id=req.session_id,
+            ).model_dump(),
+        ) from exc
+
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"AI service error: {exc}") from exc
+        logger.exception("analyze_text unexpected error session_id=%s", req.session_id)
+        raise HTTPException(
+            status_code=500,
+            detail=AnalyzeErrorDetail(
+                error_code="INTERNAL_ERROR",
+                error_message="Erro interno. Tente novamente em alguns instantes.",
+                session_id=req.session_id,
+            ).model_dump(),
+        ) from exc
 
 
 @router.post("/image", response_model=AnalyzeImageResponse)
 async def analyze_image(
     req: AnalyzeImageRequest,
     settings: Settings = Depends(get_settings),
-):
+) -> AnalyzeImageResponse:
     return await mock_service.mock_analyze_image(req)

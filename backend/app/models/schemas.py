@@ -108,6 +108,19 @@ class SessionReport(BaseModel):
     highlights: list[str]
 
 
+# ── Errors ────────────────────────────────────────────────────────────────────
+
+class AnalyzeErrorDetail(BaseModel):
+    """Structured error body returned inside FastAPI HTTPException.detail.
+
+    Android parses this via the outer {"detail": {...}} envelope.
+    """
+    error_code: str
+    error_message: str
+    session_id: str
+    repair_attempted: bool = False
+
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 class HealthResponse(BaseModel):

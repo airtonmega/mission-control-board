@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     use_mock_ai: bool = True
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    openai_timeout_seconds: float = 60.0
+    openai_max_repair_attempts: int = 1
 
     jwt_secret: str = "change-me-in-production-secret"
     jwt_expire_minutes: int = 60 * 24
