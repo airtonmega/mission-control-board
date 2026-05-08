@@ -68,6 +68,25 @@ class AnalyzeImageResponse(BaseModel):
     mock: bool = True
 
 
+class AnalyzeAudioResponse(BaseModel):
+    """Response for /analyze/audio.
+
+    Mirrors AnalyzeTextResponse plus `transcription` with the Whisper output.
+    """
+    session_id: str
+    transcription: str
+    detected_theme: str
+    quick_tip: str
+    short_answer: str
+    interview_answer: str
+    complete_answer: str
+    common_errors: list[str]
+    study_suggestions: list[str]
+    confidence_score: float = Field(ge=0.0, le=1.0)
+    processing_time_ms: int
+    mock: bool = False
+
+
 # ── Interview ─────────────────────────────────────────────────────────────────
 
 class InterviewStartRequest(BaseModel):

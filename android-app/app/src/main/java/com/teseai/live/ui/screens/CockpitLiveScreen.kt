@@ -27,6 +27,7 @@ import com.teseai.live.ui.theme.*
 @Composable
 fun CockpitLiveScreen(
     onNavigateToCamera: () -> Unit,
+    onNavigateToAudio: () -> Unit,
     onNavigateToInterview: () -> Unit,
     onNavigateToReports: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -68,6 +69,7 @@ fun CockpitLiveScreen(
         bottomBar = {
             CockpitBottomBar(
                 onCamera = onNavigateToCamera,
+                onAudio = onNavigateToAudio,
                 onInterview = onNavigateToInterview,
                 onReports = onNavigateToReports,
             )
@@ -403,55 +405,52 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
 @Composable
 private fun CockpitBottomBar(
     onCamera: () -> Unit,
+    onAudio: () -> Unit,
     onInterview: () -> Unit,
     onReports: () -> Unit,
 ) {
+    val navItemColors = NavigationBarItemDefaults.colors(
+        selectedIconColor = AccentBlue,
+        selectedTextColor = AccentBlue,
+        indicatorColor = AccentBlue.copy(alpha = 0.15f),
+        unselectedIconColor = OnSurfaceDim,
+        unselectedTextColor = OnSurfaceDim,
+    )
     NavigationBar(containerColor = PrimaryDark) {
         NavigationBarItem(
             selected = true,
             onClick = {},
             icon = { Icon(Icons.Default.Home, contentDescription = null) },
             label = { Text("Cockpit") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = AccentBlue,
-                selectedTextColor = AccentBlue,
-                indicatorColor = AccentBlue.copy(alpha = 0.15f),
-                unselectedIconColor = OnSurfaceDim,
-                unselectedTextColor = OnSurfaceDim,
-            ),
+            colors = navItemColors,
         )
         NavigationBarItem(
             selected = false,
             onClick = onCamera,
             icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
             label = { Text("Câmera") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = AccentBlue,
-                unselectedIconColor = OnSurfaceDim,
-                unselectedTextColor = OnSurfaceDim,
-            ),
+            colors = navItemColors,
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onAudio,
+            icon = { Icon(Icons.Default.Mic, contentDescription = null) },
+            label = { Text("Voz") },
+            colors = navItemColors,
         )
         NavigationBarItem(
             selected = false,
             onClick = onInterview,
             icon = { Icon(Icons.Default.RecordVoiceOver, contentDescription = null) },
             label = { Text("Entrevista") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = AccentBlue,
-                unselectedIconColor = OnSurfaceDim,
-                unselectedTextColor = OnSurfaceDim,
-            ),
+            colors = navItemColors,
         )
         NavigationBarItem(
             selected = false,
             onClick = onReports,
             icon = { Icon(Icons.Default.BarChart, contentDescription = null) },
             label = { Text("Relatórios") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = AccentBlue,
-                unselectedIconColor = OnSurfaceDim,
-                unselectedTextColor = OnSurfaceDim,
-            ),
+            colors = navItemColors,
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.teseai.live.data.remote
 
+import com.teseai.live.data.remote.dto.AnalyzeAudioResponse
 import com.teseai.live.data.remote.dto.AnalyzeImageResponse
 import com.teseai.live.data.remote.dto.AnalyzeTextRequest
 import com.teseai.live.data.remote.dto.AnalyzeTextResponse
@@ -29,4 +30,11 @@ interface TeseAIApiService {
         @Part("session_id") sessionId: RequestBody,
         @Part image: MultipartBody.Part,
     ): AnalyzeImageResponse
+
+    @Multipart
+    @POST("analyze/audio")
+    suspend fun analyzeAudio(
+        @Part("session_id") sessionId: RequestBody,
+        @Part audio: MultipartBody.Part,
+    ): AnalyzeAudioResponse
 }

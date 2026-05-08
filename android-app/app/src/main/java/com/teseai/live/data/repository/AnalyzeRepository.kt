@@ -8,6 +8,7 @@ import com.teseai.live.data.remote.dto.AnalyzeTextRequest
 import com.teseai.live.data.remote.dto.ApiErrorEnvelope
 import com.teseai.live.data.remote.dto.ConsentAcceptRequest
 import com.teseai.live.domain.model.AnalysisResult
+import com.teseai.live.domain.model.AudioAnalysisResult
 import com.teseai.live.domain.model.ImageAnalysisResult
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -149,6 +150,39 @@ class AnalyzeRepository @Inject constructor(
         val out = File(original.parent, "compressed_${original.name}")
         FileOutputStream(out).use { scaled.compress(Bitmap.CompressFormat.JPEG, quality, it) }
         return out
+    }
+
+    suspend fun analyzeAudio(audioFile: File): Result<AudioAnalysisResult> {
+        return try {
+            val sessionIdBody = sessionId.ifEmpty { "anonymous" }
+                .toRequestBody("text/plain".toMediaTypeOrNull())
+            val audioPart = MultipartBody.Part.createFormData(
+                "audio",
+                audioFile.name,
+                audioFile.asRequestBody("audio/m4a".toMediaTypeOrNull()),
+            )
+            val response = api.analyzeAudio(sessionIdBody, audioPart)
+            Result.success(
+                AudioAnalysisResult(
+                    sessionId = response.sessionId,
+                    transcription = response.transcription,
+                    detectedTheme = response.detectedTheme,
+                    quickTip = response.quickTip,
+                    shortAnswer = response.shortAnswer,
+                    interviewAnswer = response.interviewAnswer,
+                    completeAnswer = response.completeAnswer,
+                    commonErrors = response.commonErrors,
+                    studySuggestions = response.studySuggestions,
+                    confidenceScore = response.confidenceScore,
+                    processingTimeMs = response.processingTimeMs,
+                    isMock = response.mock,
+                )
+            )
+        } catch (e: HttpException) {
+            Result.failure(Exception(parseHttpError(e)))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     fun getSessionId(): String = sessionId

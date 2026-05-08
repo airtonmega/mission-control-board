@@ -100,6 +100,49 @@ async def test_analyze_image_error_returns_structured(client):
 
 
 @pytest.mark.anyio
+async def test_analyze_audio_mock(client):
+    response = await client.post(
+        "/analyze/audio",
+        data={"session_id": "test-session-audio-001"},
+        files={"audio": ("test.m4a", b"fake-audio-bytes", "audio/m4a")},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["mock"] is True
+    assert "transcription" in data
+    assert len(data["transcription"]) > 0
+    assert "detected_theme" in data
+    assert isinstance(data["common_errors"], list)
+    assert isinstance(data["study_suggestions"], list)
+    assert 0.0 <= data["confidence_score"] <= 1.0
+    assert data["processing_time_ms"] > 0
+
+
+@pytest.mark.anyio
+async def test_analyze_audio_error_returns_structured(client):
+    """When OpenAIService raises AIResponseError for audio, returns 422 structured."""
+    err = AIResponseError(user_message="Transcrição falhou.", technical_detail="bad")
+
+    def _mock_svc_audio(exc):
+        svc = MagicMock()
+        svc.analyze_audio = AsyncMock(side_effect=exc)
+        return svc
+
+    with patch("app.routers.analyze._should_use_mock", return_value=False), \
+         patch("app.routers.analyze.get_openai_service", return_value=_mock_svc_audio(err)):
+        response = await client.post(
+            "/analyze/audio",
+            data={"session_id": "err-audio-001"},
+            files={"audio": ("test.m4a", b"fake", "audio/m4a")},
+        )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert detail["error_code"] == "AI_RESPONSE_INVALID"
+    assert detail["session_id"] == "err-audio-001"
+
+
+@pytest.mark.anyio
 async def test_interview_start(client):
     response = await client.post(
         "/interview/start",

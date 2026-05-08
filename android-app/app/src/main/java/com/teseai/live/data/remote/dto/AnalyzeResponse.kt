@@ -43,6 +43,23 @@ data class ApiErrorEnvelope(
     @SerializedName("detail") val detail: ApiErrorResponse?,
 )
 
+// ── Audio analysis response (mirrors AnalyzeTextResponse + transcription) ────
+
+data class AnalyzeAudioResponse(
+    @SerializedName("session_id") val sessionId: String,
+    @SerializedName("transcription") val transcription: String,
+    @SerializedName("detected_theme") val detectedTheme: String,
+    @SerializedName("quick_tip") val quickTip: String,
+    @SerializedName("short_answer") val shortAnswer: String,
+    @SerializedName("interview_answer") val interviewAnswer: String,
+    @SerializedName("complete_answer") val completeAnswer: String,
+    @SerializedName("common_errors") val commonErrors: List<String>,
+    @SerializedName("study_suggestions") val studySuggestions: List<String>,
+    @SerializedName("confidence_score") val confidenceScore: Float,
+    @SerializedName("processing_time_ms") val processingTimeMs: Int,
+    @SerializedName("mock") val mock: Boolean,
+)
+
 // ── Image analysis response (mirrors AnalyzeTextResponse + detected_text) ───
 
 data class AnalyzeImageResponse(

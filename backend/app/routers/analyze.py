@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from app.core.config import Settings, get_settings
 from app.models.schemas import (
+    AnalyzeAudioResponse,
     AnalyzeErrorDetail,
     AnalyzeImageResponse,
     AnalyzeTextRequest,
@@ -132,6 +133,66 @@ async def analyze_image(
 
     except Exception as exc:
         logger.exception("analyze_image unexpected error session_id=%s", session_id)
+        raise HTTPException(
+            status_code=500,
+            detail=AnalyzeErrorDetail(
+                error_code="INTERNAL_ERROR",
+                error_message="Erro interno. Tente novamente em alguns instantes.",
+                session_id=session_id,
+            ).model_dump(),
+        ) from exc
+
+
+@router.post("/audio", response_model=AnalyzeAudioResponse)
+async def analyze_audio(
+    session_id: str = Form(...),
+    audio: UploadFile = File(...),
+    settings: Settings = Depends(get_settings),
+) -> AnalyzeAudioResponse:
+    if _should_use_mock(settings):
+        logger.debug("analyze_audio using mock session_id=%s", session_id)
+        return await mock_service.mock_analyze_audio(session_id)
+
+    svc: OpenAIService = get_openai_service()
+    audio_bytes = await audio.read()
+    content_type = audio.content_type or "audio/m4a"
+
+    try:
+        return await svc.analyze_audio(session_id, audio_bytes, content_type)
+
+    except AIResponseError as exc:
+        logger.warning(
+            "analyze_audio AIResponseError session_id=%s detail=%s",
+            session_id,
+            exc.technical_detail,
+        )
+        raise HTTPException(
+            status_code=422,
+            detail=AnalyzeErrorDetail(
+                error_code="AI_RESPONSE_INVALID",
+                error_message=exc.user_message,
+                session_id=session_id,
+                repair_attempted=True,
+            ).model_dump(),
+        ) from exc
+
+    except AIServiceUnavailableError as exc:
+        logger.error(
+            "analyze_audio AIServiceUnavailableError session_id=%s detail=%s",
+            session_id,
+            exc.technical_detail,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=AnalyzeErrorDetail(
+                error_code="AI_SERVICE_UNAVAILABLE",
+                error_message=exc.user_message,
+                session_id=session_id,
+            ).model_dump(),
+        ) from exc
+
+    except Exception as exc:
+        logger.exception("analyze_audio unexpected error session_id=%s", session_id)
         raise HTTPException(
             status_code=500,
             detail=AnalyzeErrorDetail(

@@ -1,6 +1,7 @@
 """Mock AI service — used when USE_MOCK_AI=true (no API key required)."""
 import time
 from app.models.schemas import (
+    AnalyzeAudioResponse,
     AnalyzeTextRequest, AnalyzeTextResponse,
     AnalyzeImageResponse,
     InterviewStartRequest, InterviewStartResponse,
@@ -168,6 +169,67 @@ async def mock_analyze_image(session_id: str) -> AnalyzeImageResponse:
         ],
         confidence_score=0.87,
         processing_time_ms=int((time.time() - start) * 1000) + 85,
+        mock=True,
+    )
+
+
+async def mock_analyze_audio(session_id: str) -> AnalyzeAudioResponse:
+    start = time.time()
+    transcription = (
+        "[MOCK] O que são Kotlin Coroutines e como elas diferem "
+        "das threads tradicionais do Java?"
+    )
+    theme = _detect_theme(transcription)
+    return AnalyzeAudioResponse(
+        session_id=session_id,
+        transcription=transcription,
+        detected_theme=theme,
+        quick_tip="Coroutines são leves: crie milhares sem overhead de threads do SO.",
+        short_answer=(
+            f"**{theme}** são unidades de computação suspensáveis que rodam em threads "
+            "de forma cooperativa, sem bloqueio, ao contrário das threads Java que são gerenciadas "
+            "pelo sistema operacional com custo de contexto alto."
+        ),
+        interview_answer=(
+            f"Em uma entrevista eu abordaria **{theme}** em três camadas:\n\n"
+            "1. **Custo**: coroutine custa ~1 KB de heap vs ~1 MB de stack de thread;\n"
+            "2. **Suspensão vs bloqueio**: `suspend` libera a thread para outras tasks;\n"
+            "3. **Structured concurrency**: `viewModelScope` cancela automaticamente ao "
+            "sair do ViewModel, evitando leaks."
+        ),
+        complete_answer=(
+            f"## {theme}\n\n"
+            "### O que são\n"
+            "Coroutines são uma abstração sobre threads que permitem código assíncrono "
+            "com sintaxe sequencial usando `suspend`/`resume`.\n\n"
+            "### Diferença das Threads\n"
+            "| Aspecto | Thread | Coroutine |\n"
+            "|---------|--------|----------|\n"
+            "| Custo de criação | ~1 MB stack | ~1 KB heap |\n"
+            "| Paralelismo | Preemptivo (SO) | Cooperativo |\n"
+            "| Cancelamento | `interrupt()` frágil | Structured concurrency |\n\n"
+            "### Exemplo\n"
+            "```kotlin\n"
+            "viewModelScope.launch {\n"
+            "    val data = withContext(Dispatchers.IO) { api.fetch() }\n"
+            "    _state.value = UiState.Success(data)\n"
+            "}\n"
+            "```"
+        ),
+        common_errors=[
+            "Usar `GlobalScope` — sem ciclo de vida controlado",
+            "Bloquear a main thread com `runBlocking` em produção",
+            "Não tratar `CancellationException` separadamente",
+            "Confundir `async`+`await` com paralelismo automático",
+        ],
+        study_suggestions=[
+            "Kotlin Coroutines Guide — kotlinlang.org/docs/coroutines-guide.html",
+            "Codelab 'Advanced Coroutines with Kotlin Flow' — developer.android.com",
+            "Livro: 'Kotlin Coroutines Deep Dive' — Marcin Moskała",
+            "Now in Android: exemplo real de coroutines em produção (GitHub)",
+        ],
+        confidence_score=0.88,
+        processing_time_ms=int((time.time() - start) * 1000) + 180,
         mock=True,
     )
 

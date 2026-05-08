@@ -191,13 +191,28 @@ cd android-app
 - [x] Mock rico para `USE_MOCK_AI=true` com todos os campos preenchidos
 - [x] 28 testes no backend (100% passando)
 
-### Fase 4 — Polimento (roadmap)
+### Fase 4 — Áudio & Voz (concluída)
+- [x] Permissão `RECORD_AUDIO` em runtime com fallback "Abrir Configurações"
+- [x] `AudioCaptureManager` (Hilt Singleton) — MediaRecorder MPEG_4/AAC, API 26+
+- [x] Indicador "MIC ATIVO" pulsante (vermelho) visível no top bar durante gravação
+- [x] Gravação explícita: tap para iniciar, tap para parar — sem captura oculta
+- [x] Contador de duração em tempo real durante gravação
+- [x] Upload multipart para `/analyze/audio` (`session_id` + arquivo `.m4a`)
+- [x] Backend transcreve via OpenAI Whisper (`whisper-1`) ou retorna mock rico
+- [x] `AnalyzeAudioResponse` = `AnalyzeTextResponse` + `transcription: str`
+- [x] Transcrição exibida em destaque antes dos cards de análise
+- [x] `AudioViewModel` com estados: PermissionRequired → Ready → Recording → Uploading → Result/Error
+- [x] `AudioAnalysisScreen` completo com botão mic animado + cards de resultado
+- [x] Nav "Voz" adicionado à bottom bar do Cockpit
+- [x] 29 testes no backend (100% passando)
+
+### Fase 5 — Polimento (roadmap)
 - [ ] Room para histórico offline
 - [ ] Export de relatório em PDF
 - [ ] Auth real com Google Sign-In
 - [ ] Testes instrumentados Android
 
-### Fase 3 — Polimento (roadmap)
+### Fase 5 — Polimento (roadmap)
 - [ ] Room para histórico offline
 - [ ] Export de relatório em PDF
 - [ ] Autenticação por conta (Google Sign-In)

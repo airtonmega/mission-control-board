@@ -18,9 +18,15 @@ from openai import AsyncOpenAI, APITimeoutError, APIConnectionError, APIStatusEr
 from pydantic import ValidationError
 
 import base64
+import io
 
 from app.models.openai_schema import OpenAIRawResponse, RESPONSE_JSON_SCHEMA
-from app.models.schemas import AnalyzeImageResponse, AnalyzeTextRequest, AnalyzeTextResponse
+from app.models.schemas import (
+    AnalyzeAudioResponse,
+    AnalyzeImageResponse,
+    AnalyzeTextRequest,
+    AnalyzeTextResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -182,6 +188,96 @@ class OpenAIService:
             raise AIResponseError(
                 user_message="A IA retornou uma resposta malformada. Tente novamente.",
                 technical_detail=f"json_decode_error: {exc} | content={content[:200]}",
+            ) from exc
+
+    async def analyze_audio(
+        self, session_id: str, audio_bytes: bytes, content_type: str
+    ) -> AnalyzeAudioResponse:
+        wall_start = time.perf_counter()
+
+        transcription = await self._transcribe_audio(audio_bytes, content_type)
+
+        repair_triggered = False
+        raw_dict = await self._call_openai(transcription, None)
+
+        try:
+            validated = OpenAIRawResponse.model_validate(raw_dict)
+        except ValidationError as first_err:
+            if self._max_repair < 1:
+                raise AIResponseError(
+                    user_message="A IA retornou uma resposta inválida para o áudio. Tente novamente.",
+                    technical_detail=str(first_err),
+                ) from first_err
+
+            logger.warning(
+                "openai_validate_audio_failed — triggering repair session_id=%s errors=%d",
+                session_id,
+                len(first_err.errors()),
+            )
+            repair_triggered = True
+            repaired_dict = await self._call_repair(transcription, raw_dict, first_err)
+
+            try:
+                validated = OpenAIRawResponse.model_validate(repaired_dict)
+            except ValidationError as second_err:
+                raise AIResponseError(
+                    user_message="A IA não conseguiu corrigir a resposta de áudio. Tente novamente.",
+                    technical_detail=f"audio_repair_also_failed: {second_err}",
+                ) from second_err
+
+        elapsed_ms = int((time.perf_counter() - wall_start) * 1000)
+
+        logger.info(
+            "openai_analyze_audio session_id=%s latency_ms=%d model=%s repair=%s",
+            session_id,
+            elapsed_ms,
+            self._model,
+            repair_triggered,
+        )
+
+        return AnalyzeAudioResponse(
+            session_id=session_id,
+            transcription=transcription,
+            detected_theme=validated.detected_theme,
+            quick_tip=validated.quick_tip,
+            short_answer=validated.short_answer,
+            interview_answer=validated.interview_answer,
+            complete_answer=validated.complete_answer,
+            common_errors=validated.common_errors,
+            study_suggestions=validated.study_suggestions,
+            confidence_score=validated.confidence_score,
+            processing_time_ms=elapsed_ms,
+            mock=False,
+        )
+
+    async def _transcribe_audio(self, audio_bytes: bytes, content_type: str) -> str:
+        audio_file = ("recording.m4a", io.BytesIO(audio_bytes), content_type)
+        try:
+            response = await self._client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+                language="pt",
+            )
+            return response.text
+        except APITimeoutError as exc:
+            raise AIServiceUnavailableError(
+                user_message="O serviço de transcrição demorou demais. Tente novamente.",
+                technical_detail=str(exc),
+            ) from exc
+        except APIConnectionError as exc:
+            raise AIServiceUnavailableError(
+                user_message="Não foi possível conectar ao serviço de transcrição.",
+                technical_detail=str(exc),
+            ) from exc
+        except APIStatusError as exc:
+            raise AIServiceUnavailableError(
+                user_message=f"Serviço de transcrição retornou erro ({exc.status_code}).",
+                technical_detail=str(exc),
+            ) from exc
+        except Exception as exc:
+            raise AIResponseError(
+                user_message="Erro ao transcrever o áudio. Verifique o formato e tente novamente.",
+                technical_detail=f"transcription_error: {exc}",
             ) from exc
 
     async def analyze_image(
