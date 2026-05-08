@@ -48,16 +48,22 @@ class AnalyzeTextResponse(BaseModel):
     mock: bool = False
 
 
-class AnalyzeImageRequest(BaseModel):
-    session_id: str
-    image_base64: str
-    context: Optional[str] = None
-
-
 class AnalyzeImageResponse(BaseModel):
+    """Response for /analyze/image.
+
+    Mirrors AnalyzeTextResponse field-for-field so Android can reuse the
+    same card composables, plus `detected_text` for OCR output.
+    """
     session_id: str
     detected_text: str
-    analysis: str
+    detected_theme: str
+    quick_tip: str
+    short_answer: str
+    interview_answer: str
+    complete_answer: str
+    common_errors: list[str]
+    study_suggestions: list[str]
+    confidence_score: float = Field(ge=0.0, le=1.0)
     processing_time_ms: int
     mock: bool = True
 

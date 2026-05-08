@@ -17,13 +17,22 @@ from typing import Optional
 from openai import AsyncOpenAI, APITimeoutError, APIConnectionError, APIStatusError
 from pydantic import ValidationError
 
+import base64
+
 from app.models.openai_schema import OpenAIRawResponse, RESPONSE_JSON_SCHEMA
-from app.models.schemas import AnalyzeTextRequest, AnalyzeTextResponse
+from app.models.schemas import AnalyzeImageResponse, AnalyzeTextRequest, AnalyzeTextResponse
 
 logger = logging.getLogger(__name__)
 
 _PROMPTS_DIR = Path(__file__).parent.parent.parent / "prompts"
 _PROMPT_FILE = _PROMPTS_DIR / "system_live_assistant.md"
+
+_IMAGE_EXTRA_INSTRUCTION = (
+    "\n\nAnálise de imagem: o usuário enviou uma imagem. "
+    "Além dos campos obrigatórios do JSON, inclua também o campo `detected_text` "
+    "com qualquer texto visível na imagem (código, labels, texto UI, etc.). "
+    "Se não houver texto visível, use uma string vazia para `detected_text`."
+)
 
 
 class AIResponseError(Exception):
@@ -173,6 +182,160 @@ class OpenAIService:
             raise AIResponseError(
                 user_message="A IA retornou uma resposta malformada. Tente novamente.",
                 technical_detail=f"json_decode_error: {exc} | content={content[:200]}",
+            ) from exc
+
+    async def analyze_image(
+        self, session_id: str, image_bytes: bytes, content_type: str
+    ) -> AnalyzeImageResponse:
+        wall_start = time.perf_counter()
+        repair_triggered = False
+
+        raw_dict = await self._call_vision(image_bytes, content_type)
+        detected_text: str = raw_dict.pop("detected_text", "")
+
+        try:
+            validated = OpenAIRawResponse.model_validate(raw_dict)
+        except ValidationError as first_err:
+            if self._max_repair < 1:
+                raise AIResponseError(
+                    user_message="A IA retornou uma resposta inválida para a imagem. Tente novamente.",
+                    technical_detail=str(first_err),
+                ) from first_err
+
+            logger.warning(
+                "openai_validate_image_failed — triggering repair session_id=%s errors=%d",
+                session_id,
+                len(first_err.errors()),
+            )
+            repair_triggered = True
+            repaired_dict = await self._call_repair_image(raw_dict, first_err)
+            detected_text = repaired_dict.pop("detected_text", detected_text)
+
+            try:
+                validated = OpenAIRawResponse.model_validate(repaired_dict)
+            except ValidationError as second_err:
+                raise AIResponseError(
+                    user_message="A IA não conseguiu corrigir a resposta de imagem. Tente novamente.",
+                    technical_detail=f"image_repair_also_failed: {second_err}",
+                ) from second_err
+
+        elapsed_ms = int((time.perf_counter() - wall_start) * 1000)
+
+        logger.info(
+            "openai_analyze_image session_id=%s latency_ms=%d model=%s repair=%s",
+            session_id,
+            elapsed_ms,
+            self._model,
+            repair_triggered,
+        )
+
+        return AnalyzeImageResponse(
+            session_id=session_id,
+            detected_text=detected_text,
+            detected_theme=validated.detected_theme,
+            quick_tip=validated.quick_tip,
+            short_answer=validated.short_answer,
+            interview_answer=validated.interview_answer,
+            complete_answer=validated.complete_answer,
+            common_errors=validated.common_errors,
+            study_suggestions=validated.study_suggestions,
+            confidence_score=validated.confidence_score,
+            processing_time_ms=elapsed_ms,
+            mock=False,
+        )
+
+    async def _call_vision(self, image_bytes: bytes, content_type: str) -> dict:
+        b64 = base64.b64encode(image_bytes).decode("utf-8")
+        image_system_prompt = self._system_prompt + _IMAGE_EXTRA_INSTRUCTION
+        messages: list[dict] = [
+            {"role": "system", "content": image_system_prompt},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{content_type};base64,{b64}",
+                            "detail": "high",
+                        },
+                    },
+                    {
+                        "type": "text",
+                        "text": "Analise esta imagem e responda no formato JSON obrigatório.",
+                    },
+                ],
+            },
+        ]
+        try:
+            completion = await self._client.chat.completions.create(
+                model=self._model,
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.7,
+                max_tokens=3000,
+            )
+        except APITimeoutError as exc:
+            raise AIServiceUnavailableError(
+                user_message="O serviço de IA demorou demais para processar a imagem.",
+                technical_detail=str(exc),
+            ) from exc
+        except APIConnectionError as exc:
+            raise AIServiceUnavailableError(
+                user_message="Não foi possível conectar ao serviço de IA.",
+                technical_detail=str(exc),
+            ) from exc
+        except APIStatusError as exc:
+            raise AIServiceUnavailableError(
+                user_message=f"Serviço de IA retornou erro ({exc.status_code}).",
+                technical_detail=str(exc),
+            ) from exc
+
+        content = completion.choices[0].message.content or "{}"
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as exc:
+            raise AIResponseError(
+                user_message="A IA retornou resposta malformada para a imagem.",
+                technical_detail=f"image_json_decode_error: {exc} | content={content[:200]}",
+            ) from exc
+
+    async def _call_repair_image(self, bad_dict: dict, errors: ValidationError) -> dict:
+        error_lines = "\n".join(
+            f"  - Campo '{e['loc'][-1] if e['loc'] else '?'}': {e['msg']}"
+            for e in errors.errors()
+        )
+        repair_prompt = (
+            f"Sua resposta anterior para a análise de imagem não estava no formato correto.\n\n"
+            f"Sua resposta com erros:\n{json.dumps(bad_dict, ensure_ascii=False, indent=2)}\n\n"
+            f"Erros de validação encontrados:\n{error_lines}\n\n"
+            f"Schema JSON obrigatório:\n{json.dumps(RESPONSE_JSON_SCHEMA, ensure_ascii=False, indent=2)}\n\n"
+            f"Corrija os campos indicados e retorne APENAS o JSON corrigido, sem nenhum texto adicional."
+        )
+        messages: list[dict] = [
+            {"role": "system", "content": self._system_prompt + _IMAGE_EXTRA_INSTRUCTION},
+            {"role": "user", "content": repair_prompt},
+        ]
+        try:
+            completion = await self._client.chat.completions.create(
+                model=self._model,
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=3000,
+            )
+        except (APITimeoutError, APIConnectionError, APIStatusError) as exc:
+            raise AIServiceUnavailableError(
+                user_message="Falha ao tentar corrigir resposta de imagem.",
+                technical_detail=str(exc),
+            ) from exc
+
+        content = completion.choices[0].message.content or "{}"
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as exc:
+            raise AIResponseError(
+                user_message="A IA não produziu JSON válido após correção de imagem.",
+                technical_detail=f"image_repair_json_decode_error: {exc}",
             ) from exc
 
     async def _call_repair(

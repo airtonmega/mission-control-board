@@ -62,10 +62,41 @@ async def test_analyze_text_validation_error(client):
 async def test_analyze_image_mock(client):
     response = await client.post(
         "/analyze/image",
-        json={"session_id": "test-session-003", "image_base64": "base64fakedata=="},
+        data={"session_id": "test-session-003"},
+        files={"image": ("test.jpg", b"\xff\xd8\xff\xe0fake-jpeg-bytes", "image/jpeg")},
     )
     assert response.status_code == 200
-    assert response.json()["mock"] is True
+    data = response.json()
+    assert data["mock"] is True
+    assert "detected_text" in data
+    assert "detected_theme" in data
+    assert isinstance(data["common_errors"], list)
+    assert isinstance(data["study_suggestions"], list)
+    assert 0.0 <= data["confidence_score"] <= 1.0
+
+
+@pytest.mark.anyio
+async def test_analyze_image_error_returns_structured(client):
+    """When OpenAIService raises AIResponseError for image, returns 422 structured."""
+    err = AIResponseError(user_message="Imagem inválida.", technical_detail="bad")
+
+    def _mock_svc_image(exc):
+        svc = MagicMock()
+        svc.analyze_image = AsyncMock(side_effect=exc)
+        return svc
+
+    with patch("app.routers.analyze._should_use_mock", return_value=False), \
+         patch("app.routers.analyze.get_openai_service", return_value=_mock_svc_image(err)):
+        response = await client.post(
+            "/analyze/image",
+            data={"session_id": "err-img-001"},
+            files={"image": ("test.jpg", b"fake", "image/jpeg")},
+        )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert detail["error_code"] == "AI_RESPONSE_INVALID"
+    assert detail["session_id"] == "err-img-001"
 
 
 @pytest.mark.anyio

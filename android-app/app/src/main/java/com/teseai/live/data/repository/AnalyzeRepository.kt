@@ -1,12 +1,21 @@
 package com.teseai.live.data.repository
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import com.google.gson.Gson
 import com.teseai.live.data.remote.TeseAIApiService
 import com.teseai.live.data.remote.dto.AnalyzeTextRequest
 import com.teseai.live.data.remote.dto.ApiErrorEnvelope
 import com.teseai.live.data.remote.dto.ConsentAcceptRequest
 import com.teseai.live.domain.model.AnalysisResult
+import com.teseai.live.domain.model.ImageAnalysisResult
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
+import java.io.File
+import java.io.FileOutputStream
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -87,6 +96,59 @@ class AnalyzeRepository @Inject constructor(
         503 -> "Serviço de IA temporariamente indisponível. Tente novamente."
         500 -> "Erro interno no servidor. Tente novamente em instantes."
         else -> "Erro ao analisar pergunta (código $code)."
+    }
+
+    suspend fun analyzeImage(imageFile: File): Result<ImageAnalysisResult> {
+        return try {
+            val compressed = compressImage(imageFile)
+            val sessionIdBody = sessionId.ifEmpty { "anonymous" }
+                .toRequestBody("text/plain".toMediaTypeOrNull())
+            val imagePart = MultipartBody.Part.createFormData(
+                "image",
+                compressed.name,
+                compressed.asRequestBody("image/jpeg".toMediaTypeOrNull()),
+            )
+            val response = api.analyzeImage(sessionIdBody, imagePart)
+            Result.success(
+                ImageAnalysisResult(
+                    sessionId = response.sessionId,
+                    detectedText = response.detectedText,
+                    detectedTheme = response.detectedTheme,
+                    quickTip = response.quickTip,
+                    shortAnswer = response.shortAnswer,
+                    interviewAnswer = response.interviewAnswer,
+                    completeAnswer = response.completeAnswer,
+                    commonErrors = response.commonErrors,
+                    studySuggestions = response.studySuggestions,
+                    confidenceScore = response.confidenceScore,
+                    processingTimeMs = response.processingTimeMs,
+                    isMock = response.mock,
+                )
+            )
+        } catch (e: HttpException) {
+            Result.failure(Exception(parseHttpError(e)))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun compressImage(original: File, maxDimension: Int = 1024, quality: Int = 80): File {
+        val bitmap = BitmapFactory.decodeFile(original.absolutePath)
+            ?: return original
+        val scale = minOf(maxDimension.toFloat() / bitmap.width, maxDimension.toFloat() / bitmap.height, 1f)
+        val scaled = if (scale < 1f) {
+            Bitmap.createScaledBitmap(
+                bitmap,
+                (bitmap.width * scale).toInt(),
+                (bitmap.height * scale).toInt(),
+                true,
+            )
+        } else {
+            bitmap
+        }
+        val out = File(original.parent, "compressed_${original.name}")
+        FileOutputStream(out).use { scaled.compress(Bitmap.CompressFormat.JPEG, quality, it) }
+        return out
     }
 
     fun getSessionId(): String = sessionId

@@ -1,9 +1,8 @@
 """Mock AI service — used when USE_MOCK_AI=true (no API key required)."""
 import time
-import uuid
 from app.models.schemas import (
     AnalyzeTextRequest, AnalyzeTextResponse,
-    AnalyzeImageRequest, AnalyzeImageResponse,
+    AnalyzeImageResponse,
     InterviewStartRequest, InterviewStartResponse,
     InterviewEvaluateRequest, InterviewEvaluateResponse,
 )
@@ -105,12 +104,70 @@ async def mock_analyze_text(req: AnalyzeTextRequest) -> AnalyzeTextResponse:
     return response
 
 
-async def mock_analyze_image(req: AnalyzeImageRequest) -> AnalyzeImageResponse:
+async def mock_analyze_image(session_id: str) -> AnalyzeImageResponse:
+    start = time.time()
+    theme = "Android — Arquitetura MVVM"
     return AnalyzeImageResponse(
-        session_id=req.session_id,
-        detected_text="[MOCK] Texto detectado na imagem: código Kotlin com padrão Repository",
-        analysis="[MOCK] A imagem contém um diagrama de arquitetura MVVM com camadas bem definidas.",
-        processing_time_ms=85,
+        session_id=session_id,
+        detected_text="[MOCK] Texto detectado: código Kotlin com padrão Repository e ViewModel",
+        detected_theme=theme,
+        quick_tip="Separe responsabilidades: ViewModel não deve conhecer View diretamente.",
+        short_answer=(
+            f"A imagem mostra uma implementação de **{theme}**. "
+            "O padrão separa UI (View), lógica de apresentação (ViewModel) e dados (Repository)."
+        ),
+        interview_answer=(
+            f"Em uma entrevista, eu descreveria **{theme}** em três camadas:\n\n"
+            "1. **View** — Composables que observam StateFlow e recompõem conforme o estado;\n"
+            "2. **ViewModel** — Expõe estado imutável, processa eventos, não conhece a View;\n"
+            "3. **Repository** — Única fonte de verdade, abstrai Room e Retrofit.\n\n"
+            "Isso promove testabilidade e separação clara de responsabilidades."
+        ),
+        complete_answer=(
+            f"## {theme}\n\n"
+            "### Visão Geral\n"
+            "MVVM (Model-View-ViewModel) é o padrão arquitetural recomendado pelo Google para apps Android modernos.\n\n"
+            "### Camadas\n"
+            "- **View (Composables):** Observa `StateFlow<UiState>` via `collectAsStateWithLifecycle()`;\n"
+            "- **ViewModel:** Gerencia estado com `MutableStateFlow`, chama Repository em coroutines;\n"
+            "- **Repository:** Coordena fontes de dados (Room local + Retrofit remoto).\n\n"
+            "### Exemplo\n"
+            "```kotlin\n"
+            "@HiltViewModel\n"
+            "class CockpitViewModel @Inject constructor(\n"
+            "    private val repo: AnalyzeRepository\n"
+            ") : ViewModel() {\n"
+            "    private val _state = MutableStateFlow<UiState>(UiState.Idle)\n"
+            "    val state = _state.asStateFlow()\n\n"
+            "    fun analyze(question: String) {\n"
+            "        viewModelScope.launch {\n"
+            "            _state.value = UiState.Loading\n"
+            "            repo.analyzeText(question)\n"
+            "                .onSuccess { _state.value = UiState.Success(it) }\n"
+            "                .onFailure { _state.value = UiState.Error(it.message.orEmpty()) }\n"
+            "        }\n"
+            "    }\n"
+            "}\n"
+            "```\n\n"
+            "### Benefícios\n"
+            "- Testabilidade: ViewModel testável sem Android framework;\n"
+            "- Reatividade: UI sempre sincronizada com o estado;\n"
+            "- Sobrevive a mudanças de configuração (rotação)."
+        ),
+        common_errors=[
+            "Passar Context para o ViewModel (memory leak)",
+            "Lógica de negócio diretamente no Composable",
+            "Múltiplos StateFlows em vez de um UiState selado",
+            "Repository fazendo parse de UI — viola separação de camadas",
+        ],
+        study_suggestions=[
+            "Guide to app architecture — developer.android.com",
+            "Kotlin Flows — kotlinlang.org/docs/flow.html",
+            "Now in Android sample app (GitHub/android/nowinandroid)",
+            "Livro: 'Android Programming: The Big Nerd Ranch Guide'",
+        ],
+        confidence_score=0.87,
+        processing_time_ms=int((time.time() - start) * 1000) + 85,
         mock=True,
     )
 

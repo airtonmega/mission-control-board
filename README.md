@@ -179,12 +179,17 @@ cd android-app
 - 26 testes no backend (100% passando)
 - Fallback mock automático se `USE_MOCK_AI=true` ou `OPENAI_API_KEY` ausente
 
-### Fase 3 — Multimodal (próximos passos)
-- [ ] CameraX integrado com análise de imagem real (`/analyze/image` real)
-- [ ] Speech-to-Text para entrada por voz
-- [ ] Indicadores de câmera/microfone ao vivo (permissão real)
-- [ ] Fluxo completo de simulação de entrevista
-- [ ] Relatórios de sessão persistidos
+### Fase 3 — Multimodal (concluída)
+- [x] CameraX integrado com captura real de imagem (`/analyze/image` real via `gpt-4o` vision)
+- [x] Permissão de câmera em runtime com fluxo de fallback "Abrir Configurações"
+- [x] Upload multipart para backend (`session_id` + arquivo JPEG comprimido)
+- [x] `OpenAIService.analyze_image()` + `_call_vision()` com base64 + repair loop
+- [x] Indicador pulsante "CAM ATIVA" no top bar durante uso da câmera
+- [x] Cards de resultado de imagem (tema, dica, curta, entrevista, erros, estudo + texto detectado)
+- [x] `CameraViewModel` com estados: PermissionRequired → Ready → Capturing → Analyzing → Result/Error
+- [x] Compressão de imagem: BitmapFactory → escala máx 1024×1024 → JPEG 80% (reduz payload)
+- [x] Mock rico para `USE_MOCK_AI=true` com todos os campos preenchidos
+- [x] 28 testes no backend (100% passando)
 
 ### Fase 4 — Polimento (roadmap)
 - [ ] Room para histórico offline
