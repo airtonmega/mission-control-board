@@ -1,0 +1,117 @@
+from pydantic import BaseModel, Field
+from typing import Optional
+import uuid
+
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+class AnonymousAuthResponse(BaseModel):
+    session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    token: str
+    message: str = "Session created"
+
+
+# ── Consent ───────────────────────────────────────────────────────────────────
+
+class ConsentAcceptRequest(BaseModel):
+    session_id: str
+    accepted: bool
+    timestamp: str
+
+
+class ConsentAcceptResponse(BaseModel):
+    session_id: str
+    consent_recorded: bool
+    message: str
+
+
+# ── Analyze ───────────────────────────────────────────────────────────────────
+
+class AnalyzeTextRequest(BaseModel):
+    session_id: str
+    question: str = Field(..., min_length=3, max_length=2000)
+    context: Optional[str] = None
+    language: str = "pt-BR"
+
+
+class AnalyzeTextResponse(BaseModel):
+    session_id: str
+    detected_theme: str
+    quick_tip: str
+    short_answer: str
+    interview_answer: str
+    complete_answer: str
+    common_errors: list[str]
+    study_suggestions: list[str]
+    confidence_score: float = Field(ge=0.0, le=1.0)
+    processing_time_ms: int
+    mock: bool = False
+
+
+class AnalyzeImageRequest(BaseModel):
+    session_id: str
+    image_base64: str
+    context: Optional[str] = None
+
+
+class AnalyzeImageResponse(BaseModel):
+    session_id: str
+    detected_text: str
+    analysis: str
+    processing_time_ms: int
+    mock: bool = True
+
+
+# ── Interview ─────────────────────────────────────────────────────────────────
+
+class InterviewStartRequest(BaseModel):
+    session_id: str
+    area: str = "Engenharia de Software"
+    level: str = "Pleno"
+    duration_minutes: int = 30
+
+
+class InterviewStartResponse(BaseModel):
+    session_id: str
+    interview_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    first_question: str
+    total_questions: int
+    area: str
+    level: str
+
+
+class InterviewEvaluateRequest(BaseModel):
+    session_id: str
+    interview_id: str
+    question: str
+    answer: str
+
+
+class InterviewEvaluateResponse(BaseModel):
+    session_id: str
+    interview_id: str
+    score: float = Field(ge=0.0, le=10.0)
+    feedback: str
+    next_question: Optional[str] = None
+    completed: bool = False
+
+
+# ── Reports ───────────────────────────────────────────────────────────────────
+
+class SessionReport(BaseModel):
+    session_id: str
+    total_queries: int
+    topics_covered: list[str]
+    average_confidence: float
+    duration_seconds: int
+    created_at: str
+    highlights: list[str]
+
+
+# ── Health ────────────────────────────────────────────────────────────────────
+
+class HealthResponse(BaseModel):
+    status: str = "ok"
+    version: str
+    mock_mode: bool
+    message: str
