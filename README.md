@@ -206,14 +206,33 @@ cd android-app
 - [x] Nav "Voz" adicionado à bottom bar do Cockpit
 - [x] 29 testes no backend (100% passando)
 
-### Fase 5 — Polimento (roadmap)
-- [ ] Room para histórico offline
-- [ ] Export de relatório em PDF
-- [ ] Auth real com Google Sign-In
-- [ ] Testes instrumentados Android
+### Fase 5 — Entrevista Simulada (concluída)
+- [x] Seleção de área (Android, Backend, Full Stack, Data Science, DevOps, Arquitetura)
+- [x] Seleção de nível (Júnior, Pleno, Sênior, Especialista)
+- [x] Início via `POST /interview/start` com 5 perguntas por área
+- [x] Fluxo progressivo de perguntas com barra de progresso
+- [x] Campo de resposta com contador de caracteres e validação mínima
+- [x] Avaliação via `POST /interview/evaluate` — score, accuracy, clarity, depth
+- [x] Cards de resultado: pontos fortes (verde), pontos de melhoria (laranja), resposta ideal expansível
+- [x] Botões "Próxima Pergunta" / "Ver Relatório" automáticos
+- [x] Relatório final local: nota média, 4 métricas, chips por pergunta, pontos fortes/fracos agregados
+- [x] `InterviewViewModel` com máquina de estados: Loading → Question → Evaluating → EvaluationResult → Report/Error
+- [x] `OpenAIService.evaluate_interview()` com prompt dedicado + repair loop (modo real)
+- [x] 7 novos testes de entrevista (41/41 passando)
 
-### Fase 5 — Polimento (roadmap)
-- [ ] Room para histórico offline
+### Fase 6 — Dashboard Acadêmico (concluída)
+- [x] `event_store.py`: registro in-memory de eventos por sessão (tipo, latência, tema, score)
+- [x] Routers `/analyze/text|image|audio` e `/interview/evaluate` registram eventos automaticamente
+- [x] `GET /reports/session/{session_id}` orientado a dados reais do event store
+- [x] `SessionReport` expandido: `InputModeCount`, `average_latency_ms`, `interview_average_score`, `events[]`
+- [x] `ReportsScreen` completo: cards de resumo, latência média, modos de entrada com barras de progresso
+- [x] Nota de entrevista em destaque, chips de temas, lista de destaques
+- [x] Exportação de relatório em JSON via `Intent.ACTION_SEND` (compartilhamento nativo Android)
+- [x] Estrutura `events[]` no JSON prepara exportação para PDF futuro
+- [x] 5 novos testes de relatório (41/41 passando)
+
+### Fase 7 — Polimento (roadmap)
+- [ ] Room para histórico offline persistente
 - [ ] Export de relatório em PDF
 - [ ] Autenticação por conta (Google Sign-In)
 - [ ] Suporte a múltiplos idiomas
