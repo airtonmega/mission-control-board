@@ -11,6 +11,8 @@ import com.teseai.live.data.remote.dto.InterviewEvaluateRequest
 import com.teseai.live.data.remote.dto.InterviewEvaluateResponse
 import com.teseai.live.data.remote.dto.InterviewStartRequest
 import com.teseai.live.data.remote.dto.InterviewStartResponse
+import com.teseai.live.data.remote.dto.RealtimeSessionRequest
+import com.teseai.live.data.remote.dto.RealtimeSessionResponse
 import com.teseai.live.data.remote.dto.SessionReportResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -53,4 +55,7 @@ interface TeseAIApiService {
 
     @GET("reports/session/{session_id}")
     suspend fun getSessionReport(@Path("session_id") sessionId: String): SessionReportResponse
+
+    @POST("realtime/session")
+    suspend fun createRealtimeSession(@Body request: RealtimeSessionRequest): RealtimeSessionResponse
 }

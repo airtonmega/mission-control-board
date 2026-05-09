@@ -13,6 +13,7 @@ import com.teseai.live.ui.screens.CockpitLiveScreen
 import com.teseai.live.ui.screens.EthicsConsentScreen
 import com.teseai.live.ui.screens.InterviewSessionScreen
 import com.teseai.live.ui.screens.InterviewSetupScreen
+import com.teseai.live.ui.screens.RealtimeAudioScreen
 import com.teseai.live.ui.screens.ReportsScreen
 import com.teseai.live.ui.screens.SettingsScreen
 
@@ -21,6 +22,7 @@ sealed class Screen(val route: String) {
     data object CockpitLive : Screen("cockpit_live")
     data object CameraAnalysis : Screen("camera_analysis")
     data object AudioAnalysis : Screen("audio_analysis")
+    data object RealtimeAudio : Screen("realtime_audio")
     data object InterviewSetup : Screen("interview_setup")
     data object InterviewSession : Screen("interview_session/{area}/{level}")
     data object Reports : Screen("reports")
@@ -48,6 +50,7 @@ fun AppNavigation(
             CockpitLiveScreen(
                 onNavigateToCamera = { navController.navigate(Screen.CameraAnalysis.route) },
                 onNavigateToAudio = { navController.navigate(Screen.AudioAnalysis.route) },
+                onNavigateToRealtime = { navController.navigate(Screen.RealtimeAudio.route) },
                 onNavigateToInterview = { navController.navigate(Screen.InterviewSetup.route) },
                 onNavigateToReports = { navController.navigate(Screen.Reports.route) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
@@ -58,6 +61,16 @@ fun AppNavigation(
         }
         composable(Screen.AudioAnalysis.route) {
             AudioAnalysisScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.RealtimeAudio.route) {
+            RealtimeAudioScreen(
+                onBack = { navController.popBackStack() },
+                onFallback = {
+                    navController.navigate(Screen.AudioAnalysis.route) {
+                        popBackStack()
+                    }
+                },
+            )
         }
         composable(Screen.InterviewSetup.route) {
             InterviewSetupScreen(

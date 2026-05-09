@@ -28,6 +28,7 @@ import com.teseai.live.ui.theme.*
 fun CockpitLiveScreen(
     onNavigateToCamera: () -> Unit,
     onNavigateToAudio: () -> Unit,
+    onNavigateToRealtime: () -> Unit,
     onNavigateToInterview: () -> Unit,
     onNavigateToReports: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -70,6 +71,7 @@ fun CockpitLiveScreen(
             CockpitBottomBar(
                 onCamera = onNavigateToCamera,
                 onAudio = onNavigateToAudio,
+                onRealtime = onNavigateToRealtime,
                 onInterview = onNavigateToInterview,
                 onReports = onNavigateToReports,
             )
@@ -406,6 +408,7 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
 private fun CockpitBottomBar(
     onCamera: () -> Unit,
     onAudio: () -> Unit,
+    onRealtime: () -> Unit,
     onInterview: () -> Unit,
     onReports: () -> Unit,
 ) {
@@ -437,6 +440,19 @@ private fun CockpitBottomBar(
             icon = { Icon(Icons.Default.Mic, contentDescription = null) },
             label = { Text("Voz") },
             colors = navItemColors,
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onRealtime,
+            icon = { Icon(Icons.Default.GraphicEq, contentDescription = null, tint = AccentBlue) },
+            label = { Text("Realtime") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = AccentBlue,
+                selectedTextColor = AccentBlue,
+                indicatorColor = AccentBlue.copy(alpha = 0.15f),
+                unselectedIconColor = AccentBlue,
+                unselectedTextColor = AccentBlue,
+            ),
         )
         NavigationBarItem(
             selected = false,
