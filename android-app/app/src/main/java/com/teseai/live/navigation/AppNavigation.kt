@@ -2,13 +2,16 @@ package com.teseai.live.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.teseai.live.ui.screens.AudioAnalysisScreen
 import com.teseai.live.ui.screens.CameraAnalysisScreen
 import com.teseai.live.ui.screens.CockpitLiveScreen
 import com.teseai.live.ui.screens.EthicsConsentScreen
+import com.teseai.live.ui.screens.InterviewSessionScreen
 import com.teseai.live.ui.screens.InterviewSetupScreen
 import com.teseai.live.ui.screens.ReportsScreen
 import com.teseai.live.ui.screens.SettingsScreen
@@ -19,6 +22,7 @@ sealed class Screen(val route: String) {
     data object CameraAnalysis : Screen("camera_analysis")
     data object AudioAnalysis : Screen("audio_analysis")
     data object InterviewSetup : Screen("interview_setup")
+    data object InterviewSession : Screen("interview_session/{area}/{level}")
     data object Reports : Screen("reports")
     data object Settings : Screen("settings")
 }
@@ -56,7 +60,21 @@ fun AppNavigation(
             AudioAnalysisScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.InterviewSetup.route) {
-            InterviewSetupScreen(onBack = { navController.popBackStack() })
+            InterviewSetupScreen(
+                onBack = { navController.popBackStack() },
+                onStartInterview = { area, level ->
+                    navController.navigate("interview_session/$area/$level")
+                },
+            )
+        }
+        composable(
+            route = Screen.InterviewSession.route,
+            arguments = listOf(
+                navArgument("area") { type = NavType.StringType },
+                navArgument("level") { type = NavType.StringType },
+            ),
+        ) {
+            InterviewSessionScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.Reports.route) {
             ReportsScreen(onBack = { navController.popBackStack() })

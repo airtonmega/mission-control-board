@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +21,10 @@ import com.teseai.live.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InterviewSetupScreen(onBack: () -> Unit) {
+fun InterviewSetupScreen(
+    onBack: () -> Unit,
+    onStartInterview: (String, String) -> Unit = { _, _ -> },
+) {
     val scrollState = rememberScrollState()
     var selectedArea by remember { mutableStateOf("Android") }
     var selectedLevel by remember { mutableStateOf("Pleno") }
@@ -65,13 +67,6 @@ fun InterviewSetupScreen(onBack: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Text(
-                "Fase 2 — Em Desenvolvimento",
-                style = MaterialTheme.typography.bodyLarge,
-                color = AccentBlue,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
             Spacer(Modifier.height(24.dp))
 
             SectionLabel("Área de Foco")
@@ -86,46 +81,13 @@ fun InterviewSetupScreen(onBack: () -> Unit) {
 
             Spacer(Modifier.height(24.dp))
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = SurfaceCard),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Construction, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Funcionalidades Planejadas", style = MaterialTheme.typography.titleMedium, color = WarningAmber, fontWeight = FontWeight.SemiBold)
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    listOf(
-                        "Fluxo de perguntas progressivo via /interview/start",
-                        "Avaliação de respostas em tempo real",
-                        "Score final com feedback detalhado",
-                        "Modo voz com Speech-to-Text",
-                        "Relatório completo da sessão",
-                    ).forEach { feature ->
-                        Row(modifier = Modifier.padding(vertical = 3.dp)) {
-                            Text("→ ", color = AccentBlue, fontWeight = FontWeight.Bold)
-                            Text(feature, style = MaterialTheme.typography.bodyMedium, color = OnSurfaceMedium)
-                        }
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
             Button(
-                onClick = {},
-                enabled = false,
+                onClick = { onStartInterview(selectedArea, selectedLevel) },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                colors = ButtonDefaults.buttonColors(
-                    disabledContainerColor = PrimaryMedium,
-                    disabledContentColor = OnSurfaceDim,
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                Text("Iniciar Simulação — Em Breve", fontWeight = FontWeight.Bold)
+                Text("Iniciar Simulação", fontWeight = FontWeight.Bold, color = androidx.compose.ui.graphics.Color.White)
             }
         }
     }

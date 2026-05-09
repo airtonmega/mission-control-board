@@ -7,12 +7,19 @@ import com.teseai.live.data.remote.dto.AnalyzeTextResponse
 import com.teseai.live.data.remote.dto.AnonymousAuthResponse
 import com.teseai.live.data.remote.dto.ConsentAcceptRequest
 import com.teseai.live.data.remote.dto.ConsentAcceptResponse
+import com.teseai.live.data.remote.dto.InterviewEvaluateRequest
+import com.teseai.live.data.remote.dto.InterviewEvaluateResponse
+import com.teseai.live.data.remote.dto.InterviewStartRequest
+import com.teseai.live.data.remote.dto.InterviewStartResponse
+import com.teseai.live.data.remote.dto.SessionReportResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.Path
 
 interface TeseAIApiService {
     @POST("auth/anonymous")
@@ -37,4 +44,13 @@ interface TeseAIApiService {
         @Part("session_id") sessionId: RequestBody,
         @Part audio: MultipartBody.Part,
     ): AnalyzeAudioResponse
+
+    @POST("interview/start")
+    suspend fun startInterview(@Body request: InterviewStartRequest): InterviewStartResponse
+
+    @POST("interview/evaluate")
+    suspend fun evaluateInterview(@Body request: InterviewEvaluateRequest): InterviewEvaluateResponse
+
+    @GET("reports/session/{session_id}")
+    suspend fun getSessionReport(@Path("session_id") sessionId: String): SessionReportResponse
 }
