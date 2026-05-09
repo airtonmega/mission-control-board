@@ -231,7 +231,24 @@ cd android-app
 - [x] Estrutura `events[]` no JSON prepara exportação para PDF futuro
 - [x] 5 novos testes de relatório (41/41 passando)
 
-### Fase 7 — Polimento (roadmap)
+### Fase 7 — Modo Realtime (concluída)
+- [x] `POST /realtime/session` — backend cria token efêmero via OpenAI Realtime Sessions API
+- [x] Token retornado ao Android (TTL 60s) — chave da OpenAI nunca exposta ao app
+- [x] `RealtimeAudioManager` — captura PCM 16-bit, 24kHz em chunks de 100ms → Base64
+- [x] `RealtimeViewModel` — WebSocket OkHttp direto com OpenAI (readTimeout=0 para streaming)
+- [x] Máquina de estados: Idle → RequestingToken → Connecting → Listening → Transcribing → Responding → Done/Error
+- [x] Envio de áudio em chunks via `input_audio_buffer.append`
+- [x] Recepção de transcrição parcial (`conversation.item.input_audio_transcription.delta`)
+- [x] Recepção de resposta parcial em streaming (`response.audio_transcript.delta`)
+- [x] Exibição de streaming na UI com `AnimatedContent`
+- [x] Interrupção via `response.cancel` — botão "Interromper" visível durante Listening/Responding
+- [x] Latência registrada por etapa (token, WebSocket open, 1ª transcrição, 1ª resposta)
+- [x] Fallback automático para `AudioAnalysisScreen` (mock mode ou falha de WebSocket)
+- [x] Tab "Realtime" adicionada à bottom bar do Cockpit
+- [x] Modo mock retorna token stub seguro sem chamada à OpenAI
+- [x] 46/46 testes backend passando (5 novos de realtime)
+
+### Fase 8 — Polimento (roadmap)
 - [ ] Room para histórico offline persistente
 - [ ] Export de relatório em PDF
 - [ ] Autenticação por conta (Google Sign-In)
