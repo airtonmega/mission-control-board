@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routers import health, auth, consent, analyze, interview, reports
+from app.routers import health, auth, consent, analyze, interview, reports, realtime
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -41,6 +41,7 @@ app.include_router(consent.router)
 app.include_router(analyze.router)
 app.include_router(interview.router)
 app.include_router(reports.router)
+app.include_router(realtime.router)
 
 
 @app.get("/")

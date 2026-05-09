@@ -156,6 +156,29 @@ class SessionReport(BaseModel):
     events: list[dict] = Field(default_factory=list)
 
 
+# ── Realtime ──────────────────────────────────────────────────────────────────
+
+class RealtimeClientSecret(BaseModel):
+    value: str
+    expires_at: int
+
+
+class RealtimeSessionRequest(BaseModel):
+    session_id: str
+    voice: str = "alloy"
+    language: str = "pt"
+
+
+class RealtimeSessionResponse(BaseModel):
+    session_id: str
+    realtime_session_id: str
+    client_secret: RealtimeClientSecret
+    model: str
+    expires_at: int
+    voice: str
+    mock: bool = False
+
+
 # ── Errors ────────────────────────────────────────────────────────────────────
 
 class AnalyzeErrorDetail(BaseModel):
