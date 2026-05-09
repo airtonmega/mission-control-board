@@ -20,12 +20,18 @@ from pydantic import ValidationError
 import base64
 import io
 
-from app.models.openai_schema import OpenAIRawResponse, RESPONSE_JSON_SCHEMA
+from app.models.openai_schema import (
+    InterviewEvalRawResponse,
+    INTERVIEW_EVAL_JSON_SCHEMA,
+    OpenAIRawResponse,
+    RESPONSE_JSON_SCHEMA,
+)
 from app.models.schemas import (
     AnalyzeAudioResponse,
     AnalyzeImageResponse,
     AnalyzeTextRequest,
     AnalyzeTextResponse,
+    InterviewEvaluateResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,6 +45,14 @@ _IMAGE_EXTRA_INSTRUCTION = (
     "com qualquer texto visível na imagem (código, labels, texto UI, etc.). "
     "Se não houver texto visível, use uma string vazia para `detected_text`."
 )
+
+_EVAL_PROMPT_FILE = _PROMPTS_DIR / "system_interview_evaluator.md"
+
+
+def _load_eval_prompt() -> str:
+    if not _EVAL_PROMPT_FILE.exists():
+        raise FileNotFoundError(f"Eval prompt not found: {_EVAL_PROMPT_FILE}")
+    return _EVAL_PROMPT_FILE.read_text(encoding="utf-8")
 
 
 class AIResponseError(Exception):
@@ -90,11 +104,13 @@ class OpenAIService:
         timeout_seconds: float,
         max_repair_attempts: int,
         system_prompt: str,
+        eval_prompt: str,
     ) -> None:
         self._client = AsyncOpenAI(api_key=api_key, timeout=timeout_seconds)
         self._model = model
         self._max_repair = max_repair_attempts
         self._system_prompt = system_prompt
+        self._eval_prompt = eval_prompt
 
     async def analyze_text(self, req: AnalyzeTextRequest) -> AnalyzeTextResponse:
         wall_start = time.perf_counter()
@@ -465,6 +481,133 @@ class OpenAIService:
                 technical_detail=f"repair_json_decode_error: {exc}",
             ) from exc
 
+    async def evaluate_interview(
+        self,
+        session_id: str,
+        area: str,
+        level: str,
+        question: str,
+        answer: str,
+    ) -> InterviewEvalRawResponse:
+        wall_start = time.perf_counter()
+        repair_triggered = False
+
+        raw_dict = await self._call_eval(area, level, question, answer)
+
+        try:
+            validated = InterviewEvalRawResponse.model_validate(raw_dict)
+        except ValidationError as first_err:
+            if self._max_repair < 1:
+                raise AIResponseError(
+                    user_message="A IA retornou uma avaliação em formato inválido. Tente novamente.",
+                    technical_detail=str(first_err),
+                ) from first_err
+            logger.warning(
+                "openai_validate_eval_failed — triggering repair session_id=%s errors=%d",
+                session_id,
+                len(first_err.errors()),
+            )
+            repair_triggered = True
+            repaired_dict = await self._call_eval_repair(area, level, question, answer, raw_dict, first_err)
+            try:
+                validated = InterviewEvalRawResponse.model_validate(repaired_dict)
+            except ValidationError as second_err:
+                raise AIResponseError(
+                    user_message="A IA não conseguiu corrigir a avaliação. Tente novamente.",
+                    technical_detail=f"eval_repair_also_failed: {second_err}",
+                ) from second_err
+
+        elapsed_ms = int((time.perf_counter() - wall_start) * 1000)
+        logger.info(
+            "openai_evaluate_interview session_id=%s latency_ms=%d model=%s area=%s level=%s repair=%s",
+            session_id, elapsed_ms, self._model, area, level, repair_triggered,
+        )
+        return validated
+
+    async def _call_eval(self, area: str, level: str, question: str, answer: str) -> dict:
+        user_content = (
+            f"Área: {area}\nNível: {level}\n\n"
+            f"Pergunta: {question}\n\nResposta do candidato: {answer}"
+        )
+        messages: list[dict] = [
+            {"role": "system", "content": self._eval_prompt},
+            {"role": "user", "content": user_content},
+        ]
+        try:
+            completion = await self._client.chat.completions.create(
+                model=self._model,
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=2000,
+            )
+        except APITimeoutError as exc:
+            raise AIServiceUnavailableError(
+                user_message="O serviço de avaliação demorou demais. Tente novamente.",
+                technical_detail=str(exc),
+            ) from exc
+        except APIConnectionError as exc:
+            raise AIServiceUnavailableError(
+                user_message="Não foi possível conectar ao serviço de avaliação.",
+                technical_detail=str(exc),
+            ) from exc
+        except APIStatusError as exc:
+            raise AIServiceUnavailableError(
+                user_message=f"Serviço de avaliação retornou erro ({exc.status_code}).",
+                technical_detail=str(exc),
+            ) from exc
+        content = completion.choices[0].message.content or "{}"
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as exc:
+            raise AIResponseError(
+                user_message="A IA retornou avaliação malformada. Tente novamente.",
+                technical_detail=f"eval_json_decode_error: {exc} | content={content[:200]}",
+            ) from exc
+
+    async def _call_eval_repair(
+        self, area: str, level: str, question: str, answer: str, bad_dict: dict, errors: ValidationError
+    ) -> dict:
+        error_lines = "\n".join(
+            f"  - Campo '{e['loc'][-1] if e['loc'] else '?'}': {e['msg']}"
+            for e in errors.errors()
+        )
+        repair_prompt = (
+            f"Sua resposta anterior para a avaliação não estava no formato correto.\n\n"
+            f"Área: {area} | Nível: {level}\n"
+            f"Pergunta: {question}\n"
+            f"Resposta avaliada: {answer}\n\n"
+            f"Sua resposta com erros:\n{json.dumps(bad_dict, ensure_ascii=False, indent=2)}\n\n"
+            f"Erros de validação:\n{error_lines}\n\n"
+            f"Schema JSON obrigatório:\n{json.dumps(INTERVIEW_EVAL_JSON_SCHEMA, ensure_ascii=False, indent=2)}\n\n"
+            f"Corrija os campos indicados e retorne APENAS o JSON corrigido."
+        )
+        messages: list[dict] = [
+            {"role": "system", "content": self._eval_prompt},
+            {"role": "user", "content": repair_prompt},
+        ]
+        try:
+            completion = await self._client.chat.completions.create(
+                model=self._model,
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=2000,
+            )
+        except (APITimeoutError, APIConnectionError, APIStatusError) as exc:
+            raise AIServiceUnavailableError(
+                user_message="Falha ao tentar corrigir a avaliação.",
+                technical_detail=str(exc),
+            ) from exc
+        content = completion.choices[0].message.content or "{}"
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as exc:
+            raise AIResponseError(
+                user_message="A IA não produziu JSON válido após correção da avaliação.",
+                technical_detail=f"eval_repair_json_decode_error: {exc}",
+            ) from exc
+
 
 # ── Singleton factory ─────────────────────────────────────────────────────────
 
@@ -483,6 +626,7 @@ def get_openai_service() -> OpenAIService:
             timeout_seconds=s.openai_timeout_seconds,
             max_repair_attempts=s.openai_max_repair_attempts,
             system_prompt=_load_system_prompt(),
+            eval_prompt=_load_eval_prompt(),
         )
     return _instance
 

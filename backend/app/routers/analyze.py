@@ -17,6 +17,7 @@ from app.services.openai_service import (
     OpenAIService,
     get_openai_service,
 )
+from app.services.event_store import record_event, AnalysisEvent
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analyze", tags=["analyze"])
@@ -33,12 +34,28 @@ async def analyze_text(
 ) -> AnalyzeTextResponse:
     if _should_use_mock(settings):
         logger.debug("analyze_text using mock session_id=%s", req.session_id)
-        return await mock_service.mock_analyze_text(req)
+        response = await mock_service.mock_analyze_text(req)
+        record_event(AnalysisEvent(
+            event_type="text",
+            session_id=req.session_id,
+            latency_ms=response.processing_time_ms,
+            theme=response.detected_theme,
+            mock=response.mock,
+        ))
+        return response
 
     svc: OpenAIService = get_openai_service()
 
     try:
-        return await svc.analyze_text(req)
+        response = await svc.analyze_text(req)
+        record_event(AnalysisEvent(
+            event_type="text",
+            session_id=req.session_id,
+            latency_ms=response.processing_time_ms,
+            theme=response.detected_theme,
+            mock=response.mock,
+        ))
+        return response
 
     except AIResponseError as exc:
         logger.warning(
@@ -91,14 +108,30 @@ async def analyze_image(
 ) -> AnalyzeImageResponse:
     if _should_use_mock(settings):
         logger.debug("analyze_image using mock session_id=%s", session_id)
-        return await mock_service.mock_analyze_image(session_id)
+        response = await mock_service.mock_analyze_image(session_id)
+        record_event(AnalysisEvent(
+            event_type="image",
+            session_id=session_id,
+            latency_ms=response.processing_time_ms,
+            theme=response.detected_theme,
+            mock=response.mock,
+        ))
+        return response
 
     svc: OpenAIService = get_openai_service()
     image_bytes = await image.read()
     content_type = image.content_type or "image/jpeg"
 
     try:
-        return await svc.analyze_image(session_id, image_bytes, content_type)
+        response = await svc.analyze_image(session_id, image_bytes, content_type)
+        record_event(AnalysisEvent(
+            event_type="image",
+            session_id=session_id,
+            latency_ms=response.processing_time_ms,
+            theme=response.detected_theme,
+            mock=response.mock,
+        ))
+        return response
 
     except AIResponseError as exc:
         logger.warning(
@@ -151,14 +184,30 @@ async def analyze_audio(
 ) -> AnalyzeAudioResponse:
     if _should_use_mock(settings):
         logger.debug("analyze_audio using mock session_id=%s", session_id)
-        return await mock_service.mock_analyze_audio(session_id)
+        response = await mock_service.mock_analyze_audio(session_id)
+        record_event(AnalysisEvent(
+            event_type="audio",
+            session_id=session_id,
+            latency_ms=response.processing_time_ms,
+            theme=response.detected_theme,
+            mock=response.mock,
+        ))
+        return response
 
     svc: OpenAIService = get_openai_service()
     audio_bytes = await audio.read()
     content_type = audio.content_type or "audio/m4a"
 
     try:
-        return await svc.analyze_audio(session_id, audio_bytes, content_type)
+        response = await svc.analyze_audio(session_id, audio_bytes, content_type)
+        record_event(AnalysisEvent(
+            event_type="audio",
+            session_id=session_id,
+            latency_ms=response.processing_time_ms,
+            theme=response.detected_theme,
+            mock=response.mock,
+        ))
+        return response
 
     except AIResponseError as exc:
         logger.warning(

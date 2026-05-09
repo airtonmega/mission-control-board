@@ -59,3 +59,46 @@ RESPONSE_JSON_SCHEMA = {
     },
     "additionalProperties": False,
 }
+
+# ── Interview evaluation schema ───────────────────────────────────────────────
+
+INTERVIEW_EVAL_JSON_SCHEMA = {
+    "type": "object",
+    "required": ["score", "accuracy", "clarity", "depth", "strengths", "weaknesses", "improved_answer"],
+    "properties": {
+        "score": {"type": "number", "minimum": 0.0, "maximum": 10.0},
+        "accuracy": {"type": "number", "minimum": 0.0, "maximum": 10.0},
+        "clarity": {"type": "number", "minimum": 0.0, "maximum": 10.0},
+        "depth": {"type": "number", "minimum": 0.0, "maximum": 10.0},
+        "strengths": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "weaknesses": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "improved_answer": {"type": "string", "minLength": 30},
+    },
+    "additionalProperties": False,
+}
+
+
+class InterviewEvalRawResponse(BaseModel):
+    score: float
+    accuracy: float
+    clarity: float
+    depth: float
+    strengths: list[str]
+    weaknesses: list[str]
+    improved_answer: str = Field(min_length=30)
+
+    @field_validator("score", "accuracy", "clarity", "depth", mode="before")
+    @classmethod
+    def coerce_score(cls, v) -> float:
+        try:
+            return max(0.0, min(10.0, float(v)))
+        except (TypeError, ValueError):
+            return 5.0
+
+    @field_validator("strengths", "weaknesses", mode="before")
+    @classmethod
+    def ensure_non_empty(cls, v: list) -> list:
+        cleaned = [str(x).strip() for x in v if str(x).strip()]
+        if not cleaned:
+            raise ValueError("At least one non-empty item required")
+        return cleaned

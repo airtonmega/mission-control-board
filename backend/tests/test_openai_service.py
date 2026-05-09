@@ -41,6 +41,7 @@ def _make_service(system_prompt: str = "test prompt", max_repair: int = 1) -> Op
         timeout_seconds=30.0,
         max_repair_attempts=max_repair,
         system_prompt=system_prompt,
+        eval_prompt="test eval prompt",
     )
 
 

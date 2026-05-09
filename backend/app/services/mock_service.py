@@ -1,5 +1,6 @@
 """Mock AI service — used when USE_MOCK_AI=true (no API key required)."""
 import time
+from typing import Optional
 from app.models.schemas import (
     AnalyzeAudioResponse,
     AnalyzeTextRequest, AnalyzeTextResponse,
@@ -23,13 +24,79 @@ _MOCK_THEMES = {
     "default": "Engenharia de Software — Conceitos Gerais",
 }
 
-_MOCK_QUESTIONS = [
-    "Explique como funcionam as Coroutines no Kotlin.",
-    "Qual a diferença entre StateFlow e SharedFlow?",
-    "Como o Hilt facilita a injeção de dependência no Android?",
-    "Descreva o padrão MVVM e suas vantagens.",
-    "Como funciona o ciclo de vida de um Composable?",
+_AREA_QUESTIONS: dict[str, list[str]] = {
+    "Android": [
+        "O que são Kotlin Coroutines? Como diferem das threads Java e quando você usaria cada abordagem?",
+        "Explique o padrão MVVM no Android moderno. Quais são as responsabilidades de cada camada?",
+        "Qual a diferença entre StateFlow e SharedFlow? Dê exemplos de quando usar cada um.",
+        "Como o Hilt implementa injeção de dependência? O que são @Singleton e @HiltViewModel e como escolher?",
+        "Explique o ciclo de vida no Jetpack Compose. O que é recomposição e como evitar recomposições desnecessárias?",
+    ],
+    "Backend": [
+        "Qual a diferença entre REST e GraphQL? Quando você escolheria um sobre o outro?",
+        "O que é autenticação JWT? Explique o fluxo e quais são os principais riscos de segurança.",
+        "Explique o CAP Theorem com um exemplo prático. Como ele afeta a escolha do banco de dados?",
+        "O que são microsserviços? Quais os trade-offs em relação a uma arquitetura monolítica?",
+        "Como você implementaria cache em uma API de alto tráfego? Quais estratégias de invalidação usaria?",
+    ],
+    "Full Stack": [
+        "Explique o event loop do JavaScript. Como funcionam Promises e async/await sob o capô?",
+        "O que é SSR (Server Side Rendering)? Compare com CSR e SSG — quando usar cada um?",
+        "Como você otimizaria a performance de uma aplicação web com alto tráfego?",
+        "Explique CORS. Por que existe e como configurar corretamente em uma API?",
+        "Qual a diferença entre autenticação baseada em sessão e JWT? Quais os trade-offs?",
+    ],
+    "Data Science": [
+        "Explique o bias-variance tradeoff. Como ele afeta a escolha e o tuning de modelos?",
+        "O que é overfitting? Quais técnicas de regularização você conhece e quando aplicar cada uma?",
+        "Explique precisão, recall e F1-score. Em qual situação cada métrica é mais relevante?",
+        "O que são transformers e por que revolucionaram o processamento de linguagem natural?",
+        "Como você lidaria com dados desbalanceados em um problema de classificação binária?",
+    ],
+    "DevOps": [
+        "Explique Infrastructure as Code. Quais ferramentas você usa e por que as escolheu?",
+        "Descreva um pipeline CI/CD completo e robusto. Quais etapas são indispensáveis?",
+        "Como funciona Kubernetes? Explique a relação entre pods, deployments, services e ingress.",
+        "O que é observabilidade? Como você a implementaria em um sistema distribuído com microserviços?",
+        "Compare blue/green deployment com canary release. Quando usar cada estratégia?",
+    ],
+    "Arquitetura": [
+        "Explique os princípios SOLID com exemplos práticos de violações comuns no dia a dia.",
+        "O que é Domain-Driven Design? Como você identifica e delimita bounded contexts?",
+        "Como você decide entre arquitetura monolítica e microsserviços para um novo sistema?",
+        "Explique o padrão CQRS. Em quais cenários ele traz benefícios reais e quando evitá-lo?",
+        "O que são Design Patterns? Explique Factory Method, Observer e Strategy com exemplos práticos.",
+    ],
+}
+
+_DEFAULT_AREA = "Android"
+
+_MOCK_SCORE_PROFILES = [
+    (7.5, 7.2, 8.0, 7.3),
+    (8.2, 8.0, 8.5, 8.0),
+    (6.8, 6.5, 7.2, 6.8),
+    (7.9, 7.6, 8.1, 8.0),
+    (7.3, 7.0, 7.5, 7.2),
 ]
+
+_MOCK_STRENGTHS_POOL = [
+    "Demonstrou conhecimento sólido do conceito central",
+    "Usou terminologia técnica correta",
+    "Abordou o tema de forma estruturada",
+    "Identificou casos de uso práticos relevantes",
+    "Mencionou trade-offs importantes",
+]
+
+_MOCK_WEAKNESSES_POOL = [
+    "Poderia incluir exemplos de código concretos",
+    "Faltou mencionar casos de uso avançados ou edge cases",
+    "A explicação poderia ser mais objetiva e direta",
+    "Não mencionou as principais alternativas e suas diferenças",
+]
+
+
+def get_area_questions(area: str) -> list[str]:
+    return _AREA_QUESTIONS.get(area, _AREA_QUESTIONS[_DEFAULT_AREA])
 
 
 def _detect_theme(question: str) -> str:
@@ -66,16 +133,13 @@ async def mock_analyze_text(req: AnalyzeTextRequest) -> AnalyzeTextResponse:
         complete_answer=(
             f"## {theme}\n\n"
             "### Conceito\n"
-            "Este é um conceito fundamental na stack Android/Kotlin moderna. "
-            "Compreender este tópico em profundidade é essencial para desenvolvedores "
-            "de nível pleno e sênior.\n\n"
+            "Este é um conceito fundamental na stack Android/Kotlin moderna.\n\n"
             "### Por que importa\n"
             "- Aumenta a legibilidade e manutenibilidade do código\n"
             "- Reduz bugs em cenários concorrentes\n"
             "- É amplamente cobrado em entrevistas técnicas\n\n"
             "### Exemplo prático\n"
             "```kotlin\n"
-            "// Exemplo de código gerado pelo mock\n"
             "viewModelScope.launch {\n"
             "    val result = repository.fetchData()\n"
             "    _uiState.update { it.copy(data = result) }\n"
@@ -119,53 +183,28 @@ async def mock_analyze_image(session_id: str) -> AnalyzeImageResponse:
         ),
         interview_answer=(
             f"Em uma entrevista, eu descreveria **{theme}** em três camadas:\n\n"
-            "1. **View** — Composables que observam StateFlow e recompõem conforme o estado;\n"
-            "2. **ViewModel** — Expõe estado imutável, processa eventos, não conhece a View;\n"
-            "3. **Repository** — Única fonte de verdade, abstrai Room e Retrofit.\n\n"
-            "Isso promove testabilidade e separação clara de responsabilidades."
+            "1. **View** — Composables que observam StateFlow;\n"
+            "2. **ViewModel** — Expõe estado imutável, não conhece a View;\n"
+            "3. **Repository** — Única fonte de verdade."
         ),
         complete_answer=(
             f"## {theme}\n\n"
-            "### Visão Geral\n"
-            "MVVM (Model-View-ViewModel) é o padrão arquitetural recomendado pelo Google para apps Android modernos.\n\n"
-            "### Camadas\n"
-            "- **View (Composables):** Observa `StateFlow<UiState>` via `collectAsStateWithLifecycle()`;\n"
-            "- **ViewModel:** Gerencia estado com `MutableStateFlow`, chama Repository em coroutines;\n"
-            "- **Repository:** Coordena fontes de dados (Room local + Retrofit remoto).\n\n"
-            "### Exemplo\n"
+            "MVVM é o padrão arquitetural recomendado pelo Google.\n\n"
             "```kotlin\n"
-            "@HiltViewModel\n"
-            "class CockpitViewModel @Inject constructor(\n"
-            "    private val repo: AnalyzeRepository\n"
-            ") : ViewModel() {\n"
-            "    private val _state = MutableStateFlow<UiState>(UiState.Idle)\n"
-            "    val state = _state.asStateFlow()\n\n"
-            "    fun analyze(question: String) {\n"
-            "        viewModelScope.launch {\n"
-            "            _state.value = UiState.Loading\n"
-            "            repo.analyzeText(question)\n"
-            "                .onSuccess { _state.value = UiState.Success(it) }\n"
-            "                .onFailure { _state.value = UiState.Error(it.message.orEmpty()) }\n"
-            "        }\n"
-            "    }\n"
+            "viewModelScope.launch {\n"
+            "    repo.analyzeText(question)\n"
+            "        .onSuccess { _state.value = UiState.Success(it) }\n"
             "}\n"
-            "```\n\n"
-            "### Benefícios\n"
-            "- Testabilidade: ViewModel testável sem Android framework;\n"
-            "- Reatividade: UI sempre sincronizada com o estado;\n"
-            "- Sobrevive a mudanças de configuração (rotação)."
+            "```"
         ),
         common_errors=[
             "Passar Context para o ViewModel (memory leak)",
             "Lógica de negócio diretamente no Composable",
             "Múltiplos StateFlows em vez de um UiState selado",
-            "Repository fazendo parse de UI — viola separação de camadas",
         ],
         study_suggestions=[
             "Guide to app architecture — developer.android.com",
-            "Kotlin Flows — kotlinlang.org/docs/flow.html",
             "Now in Android sample app (GitHub/android/nowinandroid)",
-            "Livro: 'Android Programming: The Big Nerd Ranch Guide'",
         ],
         confidence_score=0.87,
         processing_time_ms=int((time.time() - start) * 1000) + 85,
@@ -187,28 +226,17 @@ async def mock_analyze_audio(session_id: str) -> AnalyzeAudioResponse:
         quick_tip="Coroutines são leves: crie milhares sem overhead de threads do SO.",
         short_answer=(
             f"**{theme}** são unidades de computação suspensáveis que rodam em threads "
-            "de forma cooperativa, sem bloqueio, ao contrário das threads Java que são gerenciadas "
-            "pelo sistema operacional com custo de contexto alto."
+            "de forma cooperativa, sem bloqueio."
         ),
         interview_answer=(
             f"Em uma entrevista eu abordaria **{theme}** em três camadas:\n\n"
-            "1. **Custo**: coroutine custa ~1 KB de heap vs ~1 MB de stack de thread;\n"
-            "2. **Suspensão vs bloqueio**: `suspend` libera a thread para outras tasks;\n"
-            "3. **Structured concurrency**: `viewModelScope` cancela automaticamente ao "
-            "sair do ViewModel, evitando leaks."
+            "1. **Custo**: coroutine custa ~1 KB de heap vs ~1 MB de stack;\n"
+            "2. **Suspensão vs bloqueio**: `suspend` libera a thread;\n"
+            "3. **Structured concurrency**: `viewModelScope` cancela ao sair do VM."
         ),
         complete_answer=(
             f"## {theme}\n\n"
-            "### O que são\n"
-            "Coroutines são uma abstração sobre threads que permitem código assíncrono "
-            "com sintaxe sequencial usando `suspend`/`resume`.\n\n"
-            "### Diferença das Threads\n"
-            "| Aspecto | Thread | Coroutine |\n"
-            "|---------|--------|----------|\n"
-            "| Custo de criação | ~1 MB stack | ~1 KB heap |\n"
-            "| Paralelismo | Preemptivo (SO) | Cooperativo |\n"
-            "| Cancelamento | `interrupt()` frágil | Structured concurrency |\n\n"
-            "### Exemplo\n"
+            "Coroutines permitem código assíncrono com sintaxe sequencial.\n\n"
             "```kotlin\n"
             "viewModelScope.launch {\n"
             "    val data = withContext(Dispatchers.IO) { api.fetch() }\n"
@@ -220,13 +248,10 @@ async def mock_analyze_audio(session_id: str) -> AnalyzeAudioResponse:
             "Usar `GlobalScope` — sem ciclo de vida controlado",
             "Bloquear a main thread com `runBlocking` em produção",
             "Não tratar `CancellationException` separadamente",
-            "Confundir `async`+`await` com paralelismo automático",
         ],
         study_suggestions=[
             "Kotlin Coroutines Guide — kotlinlang.org/docs/coroutines-guide.html",
-            "Codelab 'Advanced Coroutines with Kotlin Flow' — developer.android.com",
             "Livro: 'Kotlin Coroutines Deep Dive' — Marcin Moskała",
-            "Now in Android: exemplo real de coroutines em produção (GitHub)",
         ],
         confidence_score=0.88,
         processing_time_ms=int((time.time() - start) * 1000) + 180,
@@ -235,24 +260,59 @@ async def mock_analyze_audio(session_id: str) -> AnalyzeAudioResponse:
 
 
 async def mock_interview_start(req: InterviewStartRequest) -> InterviewStartResponse:
+    questions = get_area_questions(req.area)
     return InterviewStartResponse(
         session_id=req.session_id,
-        first_question=_MOCK_QUESTIONS[0],
-        total_questions=5,
+        first_question=questions[0],
+        total_questions=min(5, len(questions)),
         area=req.area,
         level=req.level,
     )
 
 
 async def mock_interview_evaluate(req: InterviewEvaluateRequest) -> InterviewEvaluateResponse:
+    questions = get_area_questions(req.area)
+    total = req.total_questions
+    q_idx = req.question_number - 1
+    profile_idx = q_idx % len(_MOCK_SCORE_PROFILES)
+    score, accuracy, clarity, depth = _MOCK_SCORE_PROFILES[profile_idx]
+
+    # Adjust slightly based on answer length (longer = marginally higher)
+    answer_len = len(req.answer.strip())
+    bonus = min(1.0, answer_len / 500)
+    score = min(10.0, round(score + bonus * 0.5, 1))
+    accuracy = min(10.0, round(accuracy + bonus * 0.4, 1))
+    clarity = min(10.0, round(clarity + bonus * 0.3, 1))
+    depth = min(10.0, round(depth + bonus * 0.6, 1))
+
+    is_last = req.question_number >= total
+    next_q: Optional[str] = None
+    if not is_last:
+        next_idx = req.question_number  # 1-based, so next is index question_number
+        next_q = questions[next_idx] if next_idx < len(questions) else None
+
+    strengths = _MOCK_STRENGTHS_POOL[q_idx % 2: q_idx % 2 + 2]
+    weaknesses = _MOCK_WEAKNESSES_POOL[q_idx % 2: q_idx % 2 + 2]
+
     return InterviewEvaluateResponse(
         session_id=req.session_id,
         interview_id=req.interview_id,
-        score=7.5,
-        feedback=(
-            "Boa resposta! Você cobriu os pontos principais. "
-            "Para nota máxima, adicione exemplos práticos e mencione trade-offs."
+        question_number=req.question_number,
+        total_questions=total,
+        score=score,
+        accuracy=accuracy,
+        clarity=clarity,
+        depth=depth,
+        strengths=strengths,
+        weaknesses=weaknesses,
+        improved_answer=(
+            f"[MOCK — Pergunta {req.question_number}] Resposta ideal para '{req.question[:60]}...': "
+            f"Uma resposta completa para nível {req.level} incluiria: "
+            f"(1) definição precisa do conceito, (2) exemplo de código comentado, "
+            f"(3) trade-offs e casos de uso reais, (4) referências à documentação oficial. "
+            f"Área: {req.area}."
         ),
-        next_question=_MOCK_QUESTIONS[1],
-        completed=False,
+        next_question=next_q,
+        completed=is_last,
+        mock=True,
     )

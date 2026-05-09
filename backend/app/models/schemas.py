@@ -110,18 +110,37 @@ class InterviewEvaluateRequest(BaseModel):
     interview_id: str
     question: str
     answer: str
+    question_number: int = 1
+    total_questions: int = 5
+    area: str = "Engenharia de Software"
+    level: str = "Pleno"
 
 
 class InterviewEvaluateResponse(BaseModel):
     session_id: str
     interview_id: str
+    question_number: int
+    total_questions: int
     score: float = Field(ge=0.0, le=10.0)
-    feedback: str
+    accuracy: float = Field(ge=0.0, le=10.0)
+    clarity: float = Field(ge=0.0, le=10.0)
+    depth: float = Field(ge=0.0, le=10.0)
+    strengths: list[str]
+    weaknesses: list[str]
+    improved_answer: str
     next_question: Optional[str] = None
     completed: bool = False
+    mock: bool = False
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────
+
+class InputModeCount(BaseModel):
+    text: int = 0
+    image: int = 0
+    audio: int = 0
+    interview: int = 0
+
 
 class SessionReport(BaseModel):
     session_id: str
@@ -131,6 +150,10 @@ class SessionReport(BaseModel):
     duration_seconds: int
     created_at: str
     highlights: list[str]
+    input_modes: InputModeCount = Field(default_factory=InputModeCount)
+    average_latency_ms: Optional[float] = None
+    interview_average_score: Optional[float] = None
+    events: list[dict] = Field(default_factory=list)
 
 
 # ── Errors ────────────────────────────────────────────────────────────────────

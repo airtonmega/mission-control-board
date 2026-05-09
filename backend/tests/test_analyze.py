@@ -168,7 +168,9 @@ async def test_interview_evaluate(client):
     assert response.status_code == 200
     data = response.json()
     assert 0.0 <= data["score"] <= 10.0
-    assert "feedback" in data
+    assert "improved_answer" in data
+    assert "strengths" in data
+    assert "weaknesses" in data
 
 
 @pytest.mark.anyio
