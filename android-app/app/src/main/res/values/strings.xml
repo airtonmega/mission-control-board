@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TeseAI Live</string>
+    <string name="ethics_title">Termo de Uso Ético</string>
+    <string name="ethics_accept">Entendi e Aceito</string>
+    <string name="ethics_decline">Não Aceitar</string>
+    <string name="cockpit_title">TeseAI Live — Cockpit</string>
+    <string name="camera_active">Câmera Ativa</string>
+    <string name="mic_active">Microfone Ativo</string>
+    <string name="analyze_hint">Digite uma pergunta técnica…</string>
+    <string name="analyze_button">Analisar</string>
+    <string name="loading">Analisando…</string>
+    <string name="settings_title">Configurações</string>
+    <string name="reports_title">Relatórios</string>
+    <string name="interview_setup_title">Configurar Entrevista</string>
+    <string name="camera_analysis_title">Análise por Câmera</string>
+</resources>
