@@ -374,15 +374,7 @@ private fun AudioResultContent(result: AudioAnalysisResult, onReset: () -> Unit)
                     trackColor = OnSurfaceDim.copy(alpha = 0.3f),
                 )
                 Spacer(Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text("${result.processingTimeMs} ms", style = MaterialTheme.typography.labelSmall, color = OnSurfaceDim)
-                    if (result.isMock) {
-                        Text("MOCK", style = MaterialTheme.typography.labelSmall, color = WarningAmber, fontWeight = FontWeight.Bold)
-                    }
-                }
+                Text("${result.processingTimeMs} ms", style = MaterialTheme.typography.labelSmall, color = OnSurfaceDim)
             }
         }
 

@@ -164,7 +164,6 @@ class OpenAIService:
             study_suggestions=validated.study_suggestions,
             confidence_score=validated.confidence_score,
             processing_time_ms=elapsed_ms,
-            mock=False,
         )
 
     async def _call_openai(self, question: str, context: Optional[str]) -> dict:
@@ -263,7 +262,6 @@ class OpenAIService:
             study_suggestions=validated.study_suggestions,
             confidence_score=validated.confidence_score,
             processing_time_ms=elapsed_ms,
-            mock=False,
         )
 
     async def _transcribe_audio(self, audio_bytes: bytes, content_type: str) -> str:
@@ -353,7 +351,6 @@ class OpenAIService:
             study_suggestions=validated.study_suggestions,
             confidence_score=validated.confidence_score,
             processing_time_ms=elapsed_ms,
-            mock=False,
         )
 
     async def _call_vision(self, image_bytes: bytes, content_type: str) -> dict:

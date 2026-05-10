@@ -307,20 +307,6 @@ private fun ImageResultContent(result: ImageAnalysisResult, onReset: () -> Unit)
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (result.isMock) {
-                Surface(
-                    modifier = Modifier.clip(RoundedCornerShape(6.dp)),
-                    color = WarningAmber.copy(alpha = 0.15f),
-                ) {
-                    Text(
-                        "MOCK",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = WarningAmber,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
             Text(
                 "${result.processingTimeMs} ms",
                 style = MaterialTheme.typography.labelSmall,
