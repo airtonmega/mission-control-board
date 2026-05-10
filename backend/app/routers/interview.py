@@ -1,12 +1,10 @@
 import time
-from fastapi import APIRouter, Depends, HTTPException
-from app.core.config import Settings, get_settings
+from fastapi import APIRouter, HTTPException
 from app.models.schemas import (
     InterviewStartRequest, InterviewStartResponse,
     InterviewEvaluateRequest, InterviewEvaluateResponse,
     AnalyzeErrorDetail,
 )
-from app.services import mock_service
 from app.services.mock_service import get_area_questions
 from app.services.openai_service import (
     get_openai_service, AIResponseError, AIServiceUnavailableError,
@@ -14,10 +12,6 @@ from app.services.openai_service import (
 from app.services.event_store import record_event, AnalysisEvent
 
 router = APIRouter(prefix="/interview", tags=["interview"])
-
-
-def _should_use_mock(settings: Settings) -> bool:
-    return settings.use_mock_ai or not settings.openai_api_key
 
 
 def _pick_next_question(area: str, question_number: int, total: int) -> str | None:
@@ -29,36 +23,24 @@ def _pick_next_question(area: str, question_number: int, total: int) -> str | No
 
 
 @router.post("/start", response_model=InterviewStartResponse)
-async def start_interview(
-    req: InterviewStartRequest,
-    settings: Settings = Depends(get_settings),
-):
-    result = await mock_service.mock_interview_start(req)
+async def start_interview(req: InterviewStartRequest):
+    questions = get_area_questions(req.area)
     record_event(AnalysisEvent(
         event_type="interview_start",
         session_id=req.session_id,
-        mock=_should_use_mock(settings),
     ))
-    return result
+    return InterviewStartResponse(
+        session_id=req.session_id,
+        first_question=questions[0],
+        total_questions=min(5, len(questions)),
+        area=req.area,
+        level=req.level,
+    )
 
 
 @router.post("/evaluate", response_model=InterviewEvaluateResponse)
-async def evaluate_answer(
-    req: InterviewEvaluateRequest,
-    settings: Settings = Depends(get_settings),
-):
+async def evaluate_answer(req: InterviewEvaluateRequest):
     wall_start = time.perf_counter()
-
-    if _should_use_mock(settings):
-        result = await mock_service.mock_interview_evaluate(req)
-        record_event(AnalysisEvent(
-            event_type="interview_evaluate",
-            session_id=req.session_id,
-            latency_ms=int((time.perf_counter() - wall_start) * 1000),
-            score=result.score,
-            mock=True,
-        ))
-        return result
 
     try:
         svc = get_openai_service()
@@ -107,7 +89,6 @@ async def evaluate_answer(
         session_id=req.session_id,
         latency_ms=elapsed_ms,
         score=validated.score,
-        mock=False,
     ))
 
     return InterviewEvaluateResponse(
@@ -124,5 +105,4 @@ async def evaluate_answer(
         improved_answer=validated.improved_answer,
         next_question=next_q,
         completed=is_last,
-        mock=False,
     )

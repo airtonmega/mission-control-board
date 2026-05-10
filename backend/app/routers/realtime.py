@@ -26,10 +26,6 @@ _OPENAI_REALTIME_SESSIONS_URL = "https://api.openai.com/v1/realtime/sessions"
 _REALTIME_MODEL = "gpt-4o-realtime-preview-2024-12-17"
 
 
-def _should_use_mock(settings: Settings) -> bool:
-    return settings.use_mock_ai or not settings.openai_api_key
-
-
 @router.post("/session", response_model=RealtimeSessionResponse)
 async def create_realtime_session(
     req: RealtimeSessionRequest,
@@ -37,31 +33,6 @@ async def create_realtime_session(
 ):
     """Cria uma sessão realtime e retorna token efêmero para o cliente Android."""
     wall_start = time.perf_counter()
-
-    if _should_use_mock(settings):
-        elapsed_ms = int((time.perf_counter() - wall_start) * 1000)
-        record_event(AnalysisEvent(
-            event_type="realtime_session",
-            session_id=req.session_id,
-            latency_ms=elapsed_ms,
-            mock=True,
-        ))
-        logger.info(
-            "realtime_session_mock session_id=%s latency_ms=%d",
-            req.session_id, elapsed_ms,
-        )
-        return RealtimeSessionResponse(
-            session_id=req.session_id,
-            realtime_session_id="mock-realtime-session",
-            client_secret=RealtimeClientSecret(
-                value="mock-ephemeral-token",
-                expires_at=int(time.time()) + 60,
-            ),
-            model=_REALTIME_MODEL,
-            expires_at=int(time.time()) + 60,
-            voice=req.voice,
-            mock=True,
-        )
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -124,7 +95,6 @@ async def create_realtime_session(
         event_type="realtime_session",
         session_id=req.session_id,
         latency_ms=elapsed_ms,
-        mock=False,
     ))
     logger.info(
         "realtime_session_created session_id=%s latency_ms=%d model=%s",
@@ -142,5 +112,4 @@ async def create_realtime_session(
         model=data.get("model", _REALTIME_MODEL),
         expires_at=client_secret.get("expires_at", int(time.time()) + 60),
         voice=data.get("voice", req.voice),
-        mock=False,
     )

@@ -136,34 +136,26 @@ async def test_interview_evaluate_score_range(client):
 
 
 @pytest.mark.anyio
-async def test_interview_evaluate_real_mode_returns_structured_error(client):
-    """When real AI mode raises AIResponseError, returns 422 with AI_RESPONSE_INVALID."""
-    err = AIResponseError(
-        user_message="A IA retornou uma avaliação em formato inválido. Tente novamente.",
-        technical_detail="missing score field",
-    )
-
-    mock_svc = MagicMock()
-    mock_svc.evaluate_interview = AsyncMock(side_effect=err)
-
-    with patch("app.routers.interview._should_use_mock", return_value=False), \
-         patch("app.routers.interview.get_openai_service", return_value=mock_svc):
-        response = await client.post(
-            "/interview/evaluate",
-            json={
-                "session_id": "iv-err-001",
-                "interview_id": "iv-id-err",
-                "question": "Pergunta de teste",
-                "answer": "Resposta de teste",
-                "question_number": 1,
-                "total_questions": 5,
-                "area": "Android",
-                "level": "Pleno",
-            },
+async def test_interview_evaluate_returns_422_on_ai_failure(client, mock_openai_service):
+    from app.services.openai_service import AIResponseError
+    mock_openai_service.evaluate_interview = AsyncMock(
+        side_effect=AIResponseError(
+            user_message="A IA retornou formato inválido.",
+            technical_detail="test error",
         )
-
+    )
+    response = await client.post(
+        "/interview/evaluate",
+        json={
+            "session_id": "test-session-err",
+            "interview_id": "iv-err",
+            "question": "O que são coroutines?",
+            "answer": "São suspensáveis",
+            "question_number": 1,
+            "total_questions": 5,
+            "area": "Android",
+            "level": "Pleno",
+        },
+    )
     assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert detail["error_code"] == "AI_RESPONSE_INVALID"
-    assert detail["session_id"] == "iv-err-001"
-    assert detail["repair_attempted"] is True
+    assert response.json()["detail"]["error_code"] == "AI_RESPONSE_INVALID"

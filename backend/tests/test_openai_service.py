@@ -106,7 +106,6 @@ async def test_analyze_text_success():
         result = await svc.analyze_text(req)
 
     assert result.detected_theme == VALID_PAYLOAD["detected_theme"]
-    assert result.mock is False
     assert result.processing_time_ms >= 0
     assert mock_create.call_count == 1
 

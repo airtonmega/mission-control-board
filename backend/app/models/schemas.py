@@ -45,7 +45,6 @@ class AnalyzeTextResponse(BaseModel):
     study_suggestions: list[str]
     confidence_score: float = Field(ge=0.0, le=1.0)
     processing_time_ms: int
-    mock: bool = False
 
 
 class AnalyzeImageResponse(BaseModel):
@@ -65,7 +64,6 @@ class AnalyzeImageResponse(BaseModel):
     study_suggestions: list[str]
     confidence_score: float = Field(ge=0.0, le=1.0)
     processing_time_ms: int
-    mock: bool = True
 
 
 class AnalyzeAudioResponse(BaseModel):
@@ -84,7 +82,6 @@ class AnalyzeAudioResponse(BaseModel):
     study_suggestions: list[str]
     confidence_score: float = Field(ge=0.0, le=1.0)
     processing_time_ms: int
-    mock: bool = False
 
 
 # ── Interview ─────────────────────────────────────────────────────────────────
@@ -130,7 +127,6 @@ class InterviewEvaluateResponse(BaseModel):
     improved_answer: str
     next_question: Optional[str] = None
     completed: bool = False
-    mock: bool = False
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────
@@ -176,7 +172,6 @@ class RealtimeSessionResponse(BaseModel):
     model: str
     expires_at: int
     voice: str
-    mock: bool = False
 
 
 # ── Errors ────────────────────────────────────────────────────────────────────
@@ -197,5 +192,4 @@ class AnalyzeErrorDetail(BaseModel):
 class HealthResponse(BaseModel):
     status: str = "ok"
     version: str
-    mock_mode: bool
     message: str

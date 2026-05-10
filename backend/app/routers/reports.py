@@ -14,8 +14,7 @@ async def get_session_report(session_id: str):
     events = get_events(session_id)
 
     if not events:
-        # Return a rich mock report for sessions with no tracked events
-        return _mock_report(session_id)
+        return _empty_report(session_id)
 
     total = len(events)
     latencies = [e.latency_ms for e in events if e.latency_ms is not None]
@@ -52,7 +51,6 @@ async def get_session_report(session_id: str):
             "latency_ms": e.latency_ms,
             "theme": e.theme,
             "score": e.score,
-            "mock": e.mock,
         }
         for e in events
     ]
@@ -72,21 +70,17 @@ async def get_session_report(session_id: str):
     )
 
 
-def _mock_report(session_id: str) -> SessionReport:
+def _empty_report(session_id: str) -> SessionReport:
     return SessionReport(
         session_id=session_id,
-        total_queries=7,
-        topics_covered=["Kotlin Coroutines", "Jetpack Compose", "Clean Architecture", "MVVM"],
-        average_confidence=0.84,
-        duration_seconds=1440,
+        total_queries=0,
+        topics_covered=[],
+        average_confidence=0.0,
+        duration_seconds=0,
         created_at=datetime.now(timezone.utc).isoformat(),
-        highlights=[
-            "Forte compreensão de Coroutines e concorrência",
-            "Conhecimento sólido de arquitetura MVVM",
-            "Oportunidade de melhoria: tratamento de erros com Flow",
-        ],
-        input_modes=InputModeCount(text=4, image=1, audio=1, interview=1),
-        average_latency_ms=245.0,
-        interview_average_score=7.8,
+        highlights=["Nenhuma atividade registrada nesta sessão."],
+        input_modes=InputModeCount(),
+        average_latency_ms=None,
+        interview_average_score=None,
         events=[],
     )

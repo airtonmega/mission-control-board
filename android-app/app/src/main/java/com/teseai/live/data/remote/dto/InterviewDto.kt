@@ -43,5 +43,4 @@ data class InterviewEvaluateResponse(
     @SerializedName("improved_answer") val improvedAnswer: String,
     @SerializedName("next_question") val nextQuestion: String?,
     @SerializedName("completed") val completed: Boolean,
-    @SerializedName("mock") val mock: Boolean,
 )

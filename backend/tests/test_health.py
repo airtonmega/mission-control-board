@@ -8,7 +8,6 @@ async def test_health_ok(client):
     data = response.json()
     assert data["status"] == "ok"
     assert "version" in data
-    assert data["mock_mode"] is True
 
 
 @pytest.mark.anyio

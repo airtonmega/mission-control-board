@@ -13,7 +13,6 @@ data class AnalyzeTextResponse(
     @SerializedName("study_suggestions") val studySuggestions: List<String>,
     @SerializedName("confidence_score") val confidenceScore: Float,
     @SerializedName("processing_time_ms") val processingTimeMs: Int,
-    @SerializedName("mock") val mock: Boolean,
 )
 
 data class AnonymousAuthResponse(
@@ -57,7 +56,6 @@ data class AnalyzeAudioResponse(
     @SerializedName("study_suggestions") val studySuggestions: List<String>,
     @SerializedName("confidence_score") val confidenceScore: Float,
     @SerializedName("processing_time_ms") val processingTimeMs: Int,
-    @SerializedName("mock") val mock: Boolean,
 )
 
 // ── Image analysis response (mirrors AnalyzeTextResponse + detected_text) ───
@@ -74,5 +72,4 @@ data class AnalyzeImageResponse(
     @SerializedName("study_suggestions") val studySuggestions: List<String>,
     @SerializedName("confidence_score") val confidenceScore: Float,
     @SerializedName("processing_time_ms") val processingTimeMs: Int,
-    @SerializedName("mock") val mock: Boolean,
 )

@@ -10,13 +10,12 @@ from collections import defaultdict
 
 @dataclass
 class AnalysisEvent:
-    event_type: str   # "text", "image", "audio", "interview_start", "interview_evaluate"
+    event_type: str   # "text", "image", "audio", "interview_start", "interview_evaluate", "realtime_session"
     session_id: str
     timestamp: float = field(default_factory=time.time)
     latency_ms: Optional[int] = None
     theme: Optional[str] = None
     score: Optional[float] = None
-    mock: bool = True
 
 
 _events: dict[str, list[AnalysisEvent]] = defaultdict(list)

@@ -20,5 +20,4 @@ data class RealtimeSessionResponse(
     @SerializedName("model") val model: String,
     @SerializedName("expires_at") val expiresAt: Long,
     @SerializedName("voice") val voice: String,
-    @SerializedName("mock") val mock: Boolean,
 )

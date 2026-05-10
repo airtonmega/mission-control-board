@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.teseai.live.audio.RealtimeAudioManager
 import com.teseai.live.data.repository.AnalyzeRepository
 import com.teseai.live.data.repository.RealtimeRepository
+import com.teseai.live.di.RealtimeOkHttp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,6 @@ import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 sealed interface RealtimeUiState {
@@ -37,6 +37,7 @@ class RealtimeViewModel @Inject constructor(
     private val realtimeRepo: RealtimeRepository,
     private val analyzeRepo: AnalyzeRepository,
     private val audioManager: RealtimeAudioManager,
+    @RealtimeOkHttp private val okHttpClient: OkHttpClient,
 ) : ViewModel() {
 
     companion object {
@@ -59,11 +60,6 @@ class RealtimeViewModel @Inject constructor(
     private var firstTranscriptAt = 0L
     private var firstResponseAt = 0L
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(0, TimeUnit.SECONDS)  // no read timeout for streaming
-        .build()
-
     fun startSession() {
         viewModelScope.launch {
             tokenRequestedAt = System.currentTimeMillis()
@@ -81,15 +77,6 @@ class RealtimeViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = RealtimeUiState.Error(
                     "Não foi possível criar sessão realtime: ${e.message}",
-                    offerFallback = true,
-                )
-                return@launch
-            }
-
-            // Mock mode → offer fallback immediately
-            if (sessionResp.mock) {
-                _uiState.value = RealtimeUiState.Error(
-                    "Modo Realtime indisponível no modo mock. Use o modo Áudio padrão.",
                     offerFallback = true,
                 )
                 return@launch
@@ -259,6 +246,5 @@ class RealtimeViewModel @Inject constructor(
         super.onCleared()
         stopAudioCapture()
         webSocket?.close(1000, "viewmodel_cleared")
-        okHttpClient.dispatcher.executorService.shutdown()
     }
 }

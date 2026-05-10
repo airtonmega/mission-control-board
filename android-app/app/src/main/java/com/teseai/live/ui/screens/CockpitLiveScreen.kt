@@ -202,9 +202,6 @@ private fun InputCard(
 @Composable
 private fun AnalysisCards(result: AnalysisResult, onClear: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (result.isMock) {
-            MockBadge()
-        }
         AnalysisCard(
             icon = Icons.Default.Label,
             accentColor = CardTheme,
@@ -329,23 +326,6 @@ private fun ConfidenceBar(score: Float, timeMs: Int) {
             Spacer(Modifier.height(4.dp))
             Text("Processado em ${timeMs}ms", style = MaterialTheme.typography.labelSmall, color = OnSurfaceDim)
         }
-    }
-}
-
-@Composable
-private fun MockBadge() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(WarningAmber.copy(alpha = 0.15f))
-            .border(1.dp, WarningAmber.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(Icons.Default.Info, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(16.dp))
-        Spacer(Modifier.width(8.dp))
-        Text("Modo Mock ativo — sem consumo de API", style = MaterialTheme.typography.labelMedium, color = WarningAmber)
     }
 }
 

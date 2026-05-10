@@ -11,7 +11,12 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class RealtimeOkHttp
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -48,4 +53,14 @@ object NetworkModule {
     @Singleton
     fun provideTeseAIApiService(retrofit: Retrofit): TeseAIApiService =
         retrofit.create(TeseAIApiService::class.java)
+
+    @RealtimeOkHttp
+    @Provides
+    @Singleton
+    fun provideRealtimeOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(0, TimeUnit.SECONDS)  // sem timeout para streaming WebSocket
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
 }

@@ -49,7 +49,6 @@ async def root():
     return {
         "app": settings.app_name,
         "version": settings.app_version,
-        "mock_mode": settings.use_mock_ai,
         "docs": "/docs",
         "health": "/health",
     }

@@ -21,7 +21,6 @@ import com.teseai.live.ui.theme.*
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     val scrollState = rememberScrollState()
-    var mockModeEnabled by remember { mutableStateOf(true) }
     var darkThemeEnabled by remember { mutableStateOf(true) }
     var cameraPermissionGranted by remember { mutableStateOf(false) }
     var micPermissionGranted by remember { mutableStateOf(false) }
@@ -49,17 +48,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            SettingsSection(title = "Modo de Operação") {
-                SettingsToggleRow(
-                    icon = Icons.Default.SmartToy,
-                    iconColor = WarningAmber,
-                    title = "Modo Mock",
-                    subtitle = "Respostas simuladas sem consumo de API",
-                    checked = mockModeEnabled,
-                    onCheckedChange = { mockModeEnabled = it },
-                )
-            }
-
             SettingsSection(title = "Conexão com Backend") {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Text("URL da API", style = MaterialTheme.typography.labelLarge, color = OnSurfaceMedium)

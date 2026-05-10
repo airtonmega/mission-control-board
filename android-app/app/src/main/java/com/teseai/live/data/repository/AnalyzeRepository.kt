@@ -67,7 +67,6 @@ class AnalyzeRepository @Inject constructor(
                     studySuggestions = response.studySuggestions,
                     confidenceScore = response.confidenceScore,
                     processingTimeMs = response.processingTimeMs,
-                    isMock = response.mock,
                 )
             )
         } catch (e: HttpException) {
@@ -123,7 +122,6 @@ class AnalyzeRepository @Inject constructor(
                     studySuggestions = response.studySuggestions,
                     confidenceScore = response.confidenceScore,
                     processingTimeMs = response.processingTimeMs,
-                    isMock = response.mock,
                 )
             )
         } catch (e: HttpException) {
@@ -175,7 +173,6 @@ class AnalyzeRepository @Inject constructor(
                     studySuggestions = response.studySuggestions,
                     confidenceScore = response.confidenceScore,
                     processingTimeMs = response.processingTimeMs,
-                    isMock = response.mock,
                 )
             )
         } catch (e: HttpException) {

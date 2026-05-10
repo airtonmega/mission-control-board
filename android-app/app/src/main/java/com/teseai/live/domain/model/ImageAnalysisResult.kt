@@ -12,5 +12,4 @@ data class ImageAnalysisResult(
     val studySuggestions: List<String>,
     val confidenceScore: Float,
     val processingTimeMs: Int,
-    val isMock: Boolean,
 )
